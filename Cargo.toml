@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "bm1-server",
+    "client",
+    "share/proto",
+]
+resolver = "2"

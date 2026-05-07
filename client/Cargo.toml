@@ -1,0 +1,10 @@
+[package]
+name = "bm1-client"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bm1-proto = { path = "../share/proto" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "io-util"] }
+prost = "0.13"
+anyhow = "1"

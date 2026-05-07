@@ -1,0 +1,11 @@
+[package]
+name = "bm1-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bm1-proto = { path = "../share/proto" }
+tokio = { version = "1", features = ["full"] }
+prost = "0.13"
+bytes = "1"
+anyhow = "1"
