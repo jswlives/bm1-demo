@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::io::{self, Write};
 
 use anyhow::Result;
 use prost::Message;
@@ -22,77 +22,94 @@ async fn write_frame(stream: &mut TcpStream, msg: &CsRpcMsg) -> Result<()> {
     Ok(())
 }
 
+fn read_line(prompt: &str) -> String {
+    print!("{}", prompt);
+    io::stdout().flush().unwrap();
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    input.trim().to_string()
+}
+
+fn print_menu(session_id: u32) {
+    println!();
+    if session_id > 0 {
+        println!("=== session_id: {} ===", session_id);
+    }
+    println!("[1] Placeholder  -  发送测试消息");
+    println!("[2] Heartbeat    -  发送心跳");
+    println!("[3] Reconnect    -  断线重连");
+    println!("[0] Exit         -  退出");
+    println!();
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
     println!("connected to server");
 
     let mut session_id: u32 = 0;
+    let mut seq: u32 = 0;
 
-    // Send placeholder request
-    let req = CsRpcMsg {
-        cmd: CsRpcCmd::Placeholder as i32,
-        seq: 1,
-        session_id: 0,
-        payload: Some(Payload::PlaceholderReq(PlaceholderReq {
-            msg: "hello from client".to_string(),
-        })),
-    };
-    write_frame(&mut stream, &req).await?;
+    loop {
+        print_menu(session_id);
+        let choice = read_line("选择操作: ");
 
-    let resp = read_frame(&mut stream).await?;
-    session_id = resp.session_id;
-    println!("got response, session_id={}", session_id);
+        match choice.as_str() {
+            "1" => {
+                let msg = read_line("输入消息内容: ");
+                seq += 1;
+                let req = CsRpcMsg {
+                    cmd: CsRpcCmd::Placeholder as i32,
+                    seq,
+                    session_id,
+                    payload: Some(Payload::PlaceholderReq(PlaceholderReq {
+                        msg: msg.clone(),
+                    })),
+                };
+                write_frame(&mut stream, &req).await?;
+                println!(">>> 发送 PlaceholderReq: {}", msg);
 
-    if let Some(Payload::PlaceholderResp(r)) = &resp.payload {
-        println!("placeholder resp: {}", r.msg);
-    }
-
-    // Heartbeat loop: send heartbeat every 5 seconds
-    let mut interval = tokio::time::interval(Duration::from_secs(5));
-    for _ in 0..3 {
-        interval.tick().await;
-
-        let hb = CsRpcMsg {
-            cmd: CsRpcCmd::Heartbeat as i32,
-            seq: 2,
-            session_id,
-            payload: Some(Payload::HeartbeatReq(HeartbeatReq {
-                timestamp: std::time::SystemTime::now()
+                let resp = read_frame(&mut stream).await?;
+                session_id = resp.session_id;
+                if let Some(Payload::PlaceholderResp(r)) = &resp.payload {
+                    println!("<<< 收到 PlaceholderResp: {}", r.msg);
+                }
+            }
+            "2" => {
+                seq += 1;
+                let timestamp = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)?
-                    .as_millis() as u64,
-            })),
-        };
-        write_frame(&mut stream, &hb).await?;
+                    .as_millis() as u64;
+                let req = CsRpcMsg {
+                    cmd: CsRpcCmd::Heartbeat as i32,
+                    seq,
+                    session_id,
+                    payload: Some(Payload::HeartbeatReq(HeartbeatReq { timestamp })),
+                };
+                write_frame(&mut stream, &req).await?;
+                println!(">>> 发送 HeartbeatReq: timestamp={}", timestamp);
 
-        let resp = read_frame(&mut stream).await?;
-        if let Some(Payload::HeartbeatResp(r)) = &resp.payload {
-            println!("heartbeat resp: timestamp={}", r.timestamp);
+                let resp = read_frame(&mut stream).await?;
+                if let Some(Payload::HeartbeatResp(r)) = &resp.payload {
+                    println!("<<< 收到 HeartbeatResp: timestamp={}", r.timestamp);
+                }
+            }
+            "3" => {
+                println!("--- 断开连接 ---");
+                drop(stream);
+
+                println!("--- 重新连接 ---");
+                stream = TcpStream::connect("127.0.0.1:8080").await?;
+                println!("connected to server");
+            }
+            "0" => {
+                println!("bye!");
+                break;
+            }
+            _ => {
+                println!("无效选项，请重新选择");
+            }
         }
-    }
-
-    // Simulate reconnection
-    println!("simulating disconnect...");
-    drop(stream);
-
-    let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
-    println!("reconnected to server");
-
-    let req = CsRpcMsg {
-        cmd: CsRpcCmd::Placeholder as i32,
-        seq: 3,
-        session_id,
-        payload: Some(Payload::PlaceholderReq(PlaceholderReq {
-            msg: "hello after reconnect".to_string(),
-        })),
-    };
-    write_frame(&mut stream, &req).await?;
-
-    let resp = read_frame(&mut stream).await?;
-    println!("reconnect response, session_id={}", resp.session_id);
-
-    if let Some(Payload::PlaceholderResp(r)) = &resp.payload {
-        println!("placeholder resp: {}", r.msg);
     }
 
     Ok(())
