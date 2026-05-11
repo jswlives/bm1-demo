@@ -8,14 +8,14 @@ use tokio::net::TcpStream;
 use bm1_proto::bm1::cs_rpc_msg::Payload;
 use bm1_proto::bm1::{CsRpcCmd, CsRpcMsg, HeartbeatReq, PlaceholderReq};
 
-async fn read_frame(stream: &mut TcpStream) -> Result<CsRpcMsg> {
+async fn read_frame<R: AsyncReadExt + Unpin>(stream: &mut R) -> Result<CsRpcMsg> {
     let len = stream.read_u32().await? as usize;
     let mut buf = vec![0u8; len];
     stream.read_exact(&mut buf).await?;
     Ok(CsRpcMsg::decode(&buf[..])?)
 }
 
-async fn write_frame(stream: &mut TcpStream, msg: &CsRpcMsg) -> Result<()> {
+async fn write_frame<W: AsyncWriteExt + Unpin>(stream: &mut W, msg: &CsRpcMsg) -> Result<()> {
     let body = msg.encode_to_vec();
     stream.write_u32(body.len() as u32).await?;
     stream.write_all(&body).await?;
@@ -42,9 +42,79 @@ fn print_menu(session_id: u32) {
     println!();
 }
 
+/// Background reader: reads all frames from server, handles server-pushed
+/// messages (e.g. HeartbeatReq) inline, and forwards the rest via `tx`.
+async fn reader_task(
+    mut stream: tokio::io::ReadHalf<TcpStream>,
+    tx: tokio::sync::mpsc::Sender<CsRpcMsg>,
+) {
+    loop {
+        match read_frame(&mut stream).await {
+            Ok(msg) => match &msg.payload {
+                Some(Payload::HeartbeatReq(_)) => {
+                    println!("\n<<< 收到服务端心跳 ping, 已自动忽略");
+                }
+                _ => {
+                    if tx.send(msg).await.is_err() {
+                        break;
+                    }
+                }
+            },
+            Err(_) => break,
+        }
+    }
+}
+
+struct Connection {
+    write_tx: tokio::sync::mpsc::Sender<CsRpcMsg>,
+    read_rx: tokio::sync::mpsc::Receiver<CsRpcMsg>,
+    _reader_handle: tokio::task::JoinHandle<()>,
+    _writer_handle: tokio::task::JoinHandle<()>,
+}
+
+impl Connection {
+    async fn send(&self, msg: &CsRpcMsg) -> Result<()> {
+        self.write_tx.send(msg.clone()).await?;
+        Ok(())
+    }
+
+    async fn recv(&mut self) -> Result<CsRpcMsg> {
+        let msg = self
+            .read_rx
+            .recv()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("connection closed"))?;
+        Ok(msg)
+    }
+}
+
+async fn start_connection(addr: &str) -> Result<Connection> {
+    let stream = TcpStream::connect(addr).await?;
+    let (read_half, mut write_half) = tokio::io::split(stream);
+
+    let (resp_tx, resp_rx) = tokio::sync::mpsc::channel::<CsRpcMsg>(32);
+    let (write_tx, mut write_rx) = tokio::sync::mpsc::channel::<CsRpcMsg>(32);
+
+    let reader_handle = tokio::spawn(reader_task(read_half, resp_tx));
+    let writer_handle = tokio::spawn(async move {
+        while let Some(msg) = write_rx.recv().await {
+            if write_frame(&mut write_half, &msg).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    Ok(Connection {
+        write_tx,
+        read_rx: resp_rx,
+        _reader_handle: reader_handle,
+        _writer_handle: writer_handle,
+    })
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut stream = TcpStream::connect("127.0.0.1:8080").await?;
+    let mut conn = start_connection("127.0.0.1:8080").await?;
     println!("connected to server");
 
     let mut session_id: u32 = 0;
@@ -66,10 +136,10 @@ async fn main() -> Result<()> {
                         msg: msg.clone(),
                     })),
                 };
-                write_frame(&mut stream, &req).await?;
+                conn.send(&req).await?;
                 println!(">>> 发送 PlaceholderReq: {}", msg);
 
-                let resp = read_frame(&mut stream).await?;
+                let resp = conn.recv().await?;
                 session_id = resp.session_id;
                 if let Some(Payload::PlaceholderResp(r)) = &resp.payload {
                     println!("<<< 收到 PlaceholderResp: {}", r.msg);
@@ -86,20 +156,20 @@ async fn main() -> Result<()> {
                     session_id,
                     payload: Some(Payload::HeartbeatReq(HeartbeatReq { timestamp })),
                 };
-                write_frame(&mut stream, &req).await?;
+                conn.send(&req).await?;
                 println!(">>> 发送 HeartbeatReq: timestamp={}", timestamp);
 
-                let resp = read_frame(&mut stream).await?;
+                let resp = conn.recv().await?;
                 if let Some(Payload::HeartbeatResp(r)) = &resp.payload {
                     println!("<<< 收到 HeartbeatResp: timestamp={}", r.timestamp);
                 }
             }
             "3" => {
                 println!("--- 断开连接 ---");
-                drop(stream);
+                drop(conn);
 
                 println!("--- 重新连接 ---");
-                stream = TcpStream::connect("127.0.0.1:8080").await?;
+                conn = start_connection("127.0.0.1:8080").await?;
                 println!("connected to server");
             }
             "0" => {

@@ -1,3 +1,3 @@
 pub mod bm1 {
-    include!(concat!(env!("OUT_DIR"), "/bm1.rs"));
+    include!("../../protos_build/bm1.rs");
 }

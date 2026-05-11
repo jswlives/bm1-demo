@@ -5,6 +5,6 @@ edition = "2024"
 
 [dependencies]
 bm1-proto = { path = "../share/proto" }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "io-util"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "io-util", "sync"] }
 prost = "0.13"
 anyhow = "1"
