@@ -10,6 +10,8 @@ message CSRpcMsg {
   oneof payload {
     LoginReq login_req = 14;
     LoginResp login_resp = 15;
+    AddMoneyReq add_money_req = 16;
+    AddMoneyResp add_money_resp = 17;
   }
 }
 
@@ -17,6 +19,8 @@ enum CSRpcCmd {
   CS_RPC_CMD_UNSPECIFIED = 0;
   CS_RPC_CMD_LOGIN_REQ = 3;
   CS_RPC_CMD_LOGIN_RESP = 4;
+  CS_RPC_CMD_ADD_MONEY_REQ = 5;
+  CS_RPC_CMD_ADD_MONEY_RESP = 6;
 }
 
 message LoginReq {
@@ -25,5 +29,15 @@ message LoginReq {
 
 message LoginResp {
   model.PlayerData player_data = 1;
+  string error_msg = 2;
+}
+
+message AddMoneyReq {
+  model.PlayerBagMoneyType money_type = 1;
+  uint32 amount = 2;
+}
+
+message AddMoneyResp {
+  uint32 money_count = 1;
   string error_msg = 2;
 }
