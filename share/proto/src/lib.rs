@@ -1,3 +1,7 @@
-pub mod bm1 {
-    include!("../../protos_build/bm1.rs");
+pub mod message {
+    include!("../../protos_build/message.rs");
+}
+
+pub mod model {
+    include!("../../protos_build/model.rs");
 }

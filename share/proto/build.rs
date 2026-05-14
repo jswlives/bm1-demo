@@ -3,6 +3,6 @@ fn main() {
     prost_build::Config::new()
         .type_attribute(".", "#[allow(non_camel_case_types)]")
         .out_dir(&out_dir)
-        .compile_protos(&["protos/message.proto"], &["protos/"])
+        .compile_protos(&["protos/message.proto", "protos/model.proto"], &["protos/"])
         .unwrap();
 }

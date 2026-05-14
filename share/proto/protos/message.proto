@@ -1,5 +1,5 @@
 syntax = "proto3";
-package bm1;
+package message;
 
 message CSRpcMsg {
   CSRpcCmd cmd = 1;

@@ -1,0 +1,36 @@
+syntax = "proto3";
+package model;
+
+
+
+message PlayerBase{
+    uint64 player_id = 1;
+    string player_name = 2;
+    uint32 player_level = 3;
+}
+
+message PlayerBagItem{
+    uint32 item_id = 1;
+    uint32 item_count = 2;
+}
+
+enum PlayerBagMoneyType{
+    PLAYER_BAG_MONEY_TYPE_UNSPECIFIED = 0;
+    PLAYER_BAG_MONEY_TYPE_GOLD = 1;
+    PLAYER_BAG_MONEY_TYPE_DIAMOND = 2;
+}
+
+message PlayerBagMoney{
+    PlayerBagMoneyType money_type = 1;
+    uint32 money_count = 2;
+}
+
+message PlayerBag{
+    repeated PlayerBagItem items = 1;
+    repeated PlayerBagMoney money = 2;
+}
+
+message PlayerData {
+    PlayerBase player_base = 1;
+    PlayerBag player_bag = 2;
+}

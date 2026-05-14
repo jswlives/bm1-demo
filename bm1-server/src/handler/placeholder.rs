@@ -1,5 +1,5 @@
-use bm1_proto::bm1::{CsRpcCmd, CsRpcMsg, PlaceholderResp}; // 命令枚举、消息体、Placeholder 响应结构
-use bm1_proto::bm1::cs_rpc_msg::Payload; // oneof payload 枚举
+use bm1_proto::message::{CsRpcCmd, CsRpcMsg, PlaceholderResp}; // 命令枚举、消息体、Placeholder 响应结构
+use bm1_proto::message::cs_rpc_msg::Payload; // oneof payload 枚举
 
 use crate::router::{Context, MessageHandler}; // 路由上下文和处理器 trait
 

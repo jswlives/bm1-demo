@@ -4,8 +4,8 @@ use std::time::Duration; // 时间间隔，用于心跳超时判断
 use tokio::net::{TcpListener, TcpStream}; // TCP 监听器与连接流
 use tokio::sync::Mutex; // 异步互斥锁，用于保护 SessionManager 的并发访问
 
-use bm1_proto::bm1::{CsRpcCmd, CsRpcMsg, HeartbeatReq}; // protobuf 生成的消息类型
-use bm1_proto::bm1::cs_rpc_msg::Payload; // oneof payload 枚举
+use bm1_proto::message::{CsRpcCmd, CsRpcMsg, HeartbeatReq}; // protobuf 生成的消息类型
+use bm1_proto::message::cs_rpc_msg::Payload; // oneof payload 枚举
 
 use crate::codec; // 编解码：帧读写
 use crate::handler::{HeartbeatHandler, PlaceholderHandler}; // 两个业务处理器

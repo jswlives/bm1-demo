@@ -5,8 +5,8 @@ use prost::Message; // protobuf 消息的编解码 trait
 use tokio::io::{AsyncReadExt, AsyncWriteExt}; // 异步读写扩展方法
 use tokio::net::TcpStream; // 异步 TCP 流
 
-use bm1_proto::bm1::cs_rpc_msg::Payload; // oneof payload 枚举
-use bm1_proto::bm1::{CsRpcCmd, CsRpcMsg, HeartbeatReq, PlaceholderReq}; // 命令枚举与消息结构
+use bm1_proto::message::cs_rpc_msg::Payload; // oneof payload 枚举
+use bm1_proto::message::{CsRpcCmd, CsRpcMsg, HeartbeatReq, PlaceholderReq}; // 命令枚举与消息结构
 
 /// 从流中读取一个完整帧：4 字节大端长度头 + protobuf 消息体
 /// 泛型 R: AsyncReadExt + Unpin，支持 TcpStream 和 ReadHalf

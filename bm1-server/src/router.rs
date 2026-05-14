@@ -1,6 +1,6 @@
 use std::collections::HashMap; // 哈希表，用于存储命令号到处理器的映射
 
-use bm1_proto::bm1::CsRpcMsg; // protobuf RPC 消息类型
+use bm1_proto::message::CsRpcMsg; // protobuf RPC 消息类型
 
 /// 路由上下文，在分发时传递给 handler 的环境信息
 pub struct Context {
@@ -40,7 +40,7 @@ impl Router {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bm1_proto::bm1::CsRpcCmd; // 命令枚举
+    use bm1_proto::message::CsRpcCmd; // 命令枚举
 
     // 测试用 handler：原样返回消息（echo）
     struct EchoHandler;

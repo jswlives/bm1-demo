@@ -3,6 +3,7 @@ mod handler; // 处理器模块：各命令的业务逻辑
 mod router;  // 路由模块：根据 cmd 分发消息到对应 handler
 mod session; // 会话模块：管理客户端会话的创建/重连/断开
 mod server;  // 服务器模块：TCP 监听与连接处理
+mod logic;   // 逻辑模块：玩家数据模型与业务逻辑
 
 use server::Server; // 引入 Server 结构体
 
