@@ -59,11 +59,11 @@ mod tests {
     #[test]
     fn test_dispatch_known_cmd() {
         let mut router = Router::new();
-        router.register(CsRpcCmd::Placeholder as i32, Box::new(EchoHandler)); // 注册 Placeholder 命令
+        router.register(CsRpcCmd::LoginReq as i32, Box::new(EchoHandler));
 
-        let ctx = Context { session_id: 1 }; // 上下文：会话 ID 1
+        let ctx = Context { session_id: 1 };
         let msg = CsRpcMsg {
-            cmd: CsRpcCmd::Placeholder as i32, // Placeholder 命令
+            cmd: CsRpcCmd::LoginReq as i32,
             seq: 1,                           // 序列号 1
             session_id: 0,                    // 原始消息中的 session_id（客户端未填）
             payload: None,

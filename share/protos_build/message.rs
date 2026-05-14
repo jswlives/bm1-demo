@@ -8,7 +8,7 @@ pub struct CsRpcMsg {
     pub seq: u32,
     #[prost(uint32, tag = "3")]
     pub session_id: u32,
-    #[prost(oneof = "cs_rpc_msg::Payload", tags = "10, 11, 12, 13")]
+    #[prost(oneof = "cs_rpc_msg::Payload", tags = "14, 15")]
     pub payload: ::core::option::Option<cs_rpc_msg::Payload>,
 }
 /// Nested message and enum types in `CSRpcMsg`.
@@ -16,47 +16,33 @@ pub mod cs_rpc_msg {
     #[allow(non_camel_case_types)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Payload {
-        #[prost(message, tag = "10")]
-        PlaceholderReq(super::PlaceholderReq),
-        #[prost(message, tag = "11")]
-        PlaceholderResp(super::PlaceholderResp),
-        #[prost(message, tag = "12")]
-        HeartbeatReq(super::HeartbeatReq),
-        #[prost(message, tag = "13")]
-        HeartbeatResp(super::HeartbeatResp),
+        #[prost(message, tag = "14")]
+        LoginReq(super::LoginReq),
+        #[prost(message, tag = "15")]
+        LoginResp(super::LoginResp),
     }
 }
 #[allow(non_camel_case_types)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PlaceholderReq {
-    #[prost(string, tag = "1")]
-    pub msg: ::prost::alloc::string::String,
-}
-#[allow(non_camel_case_types)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PlaceholderResp {
-    #[prost(string, tag = "1")]
-    pub msg: ::prost::alloc::string::String,
-}
-#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct HeartbeatReq {
-    #[prost(uint64, tag = "1")]
-    pub timestamp: u64,
+pub struct LoginReq {
+    #[prost(uint32, tag = "1")]
+    pub player_id: u32,
 }
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct HeartbeatResp {
-    #[prost(uint64, tag = "1")]
-    pub timestamp: u64,
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LoginResp {
+    #[prost(message, optional, tag = "1")]
+    pub player_data: ::core::option::Option<super::model::PlayerData>,
+    #[prost(string, tag = "2")]
+    pub error_msg: ::prost::alloc::string::String,
 }
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CsRpcCmd {
     Unspecified = 0,
-    Placeholder = 1,
-    Heartbeat = 2,
+    LoginReq = 3,
+    LoginResp = 4,
 }
 impl CsRpcCmd {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -66,16 +52,16 @@ impl CsRpcCmd {
     pub fn as_str_name(&self) -> &'static str {
         match self {
             Self::Unspecified => "CS_RPC_CMD_UNSPECIFIED",
-            Self::Placeholder => "CS_RPC_CMD_PLACEHOLDER",
-            Self::Heartbeat => "CS_RPC_CMD_HEARTBEAT",
+            Self::LoginReq => "CS_RPC_CMD_LOGIN_REQ",
+            Self::LoginResp => "CS_RPC_CMD_LOGIN_RESP",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
             "CS_RPC_CMD_UNSPECIFIED" => Some(Self::Unspecified),
-            "CS_RPC_CMD_PLACEHOLDER" => Some(Self::Placeholder),
-            "CS_RPC_CMD_HEARTBEAT" => Some(Self::Heartbeat),
+            "CS_RPC_CMD_LOGIN_REQ" => Some(Self::LoginReq),
+            "CS_RPC_CMD_LOGIN_RESP" => Some(Self::LoginResp),
             _ => None,
         }
     }

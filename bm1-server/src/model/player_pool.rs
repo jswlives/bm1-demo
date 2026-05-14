@@ -1,14 +1,63 @@
 use std::collections::HashMap;
+use std::sync::LazyLock;
+
+use bm1_proto::model::{PlayerBag, PlayerBagItem, PlayerBagMoney, PlayerBagMoneyType, PlayerBase, PlayerData};
 
 use super::player::Player;
-use bm1_proto::model::PlayerData;
 
 /// 已加载玩家实例的池，提供增删查操作
 pub struct PlayerPool {
     players: HashMap<u64, Player>,
 }
 
+static PLAYER_POOL: LazyLock<PlayerPool> = LazyLock::new(|| {
+    let mut pool = PlayerPool::new();
+    pool.load(PlayerData {
+        player_base: Some(PlayerBase {
+            player_id: 1,
+            player_name: "alice".into(),
+            player_level: 10,
+        }),
+        player_bag: Some(PlayerBag {
+            items: vec![PlayerBagItem { item_id: 1001, item_count: 5 }],
+            money: vec![PlayerBagMoney {
+                money_type: PlayerBagMoneyType::Gold as i32,
+                money_count: 1000,
+            }],
+        }),
+    });
+    pool.load(PlayerData {
+        player_base: Some(PlayerBase {
+            player_id: 2,
+            player_name: "bob".into(),
+            player_level: 20,
+        }),
+        player_bag: Some(PlayerBag {
+            items: vec![
+                PlayerBagItem { item_id: 2001, item_count: 3 },
+                PlayerBagItem { item_id: 2002, item_count: 1 },
+            ],
+            money: vec![
+                PlayerBagMoney {
+                    money_type: PlayerBagMoneyType::Gold as i32,
+                    money_count: 500,
+                },
+                PlayerBagMoney {
+                    money_type: PlayerBagMoneyType::Diamond as i32,
+                    money_count: 50,
+                },
+            ],
+        }),
+    });
+    pool
+});
+
 impl PlayerPool {
+    /// 获取全局玩家池实例
+    pub fn global() -> &'static PlayerPool {
+        &PLAYER_POOL
+    }
+
     pub fn new() -> Self {
         Self {
             players: HashMap::new(),
@@ -59,7 +108,7 @@ impl PlayerPool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bm1_proto::model::{PlayerBase, PlayerBag};
+    use bm1_proto::model::PlayerBase;
 
     fn make_player(id: u64, name: &str) -> PlayerData {
         PlayerData {

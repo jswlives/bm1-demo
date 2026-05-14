@@ -1,36 +1,29 @@
 syntax = "proto3";
 package message;
 
+import "model.proto";
+
 message CSRpcMsg {
   CSRpcCmd cmd = 1;
   uint32 seq = 2;
   uint32 session_id = 3;
   oneof payload {
-    PlaceholderReq placeholder_req = 10;
-    PlaceholderResp placeholder_resp = 11;
-    HeartbeatReq heartbeat_req = 12;
-    HeartbeatResp heartbeat_resp = 13;
+    LoginReq login_req = 14;
+    LoginResp login_resp = 15;
   }
 }
 
 enum CSRpcCmd {
   CS_RPC_CMD_UNSPECIFIED = 0;
-  CS_RPC_CMD_PLACEHOLDER = 1;
-  CS_RPC_CMD_HEARTBEAT = 2;
+  CS_RPC_CMD_LOGIN_REQ = 3;
+  CS_RPC_CMD_LOGIN_RESP = 4;
 }
 
-message PlaceholderReq {
-  string msg = 1;
+message LoginReq {
+  uint32 player_id = 1;
 }
 
-message PlaceholderResp {
-  string msg = 1;
-}
-
-message HeartbeatReq {
-  uint64 timestamp = 1;
-}
-
-message HeartbeatResp {
-  uint64 timestamp = 1;
+message LoginResp {
+  model.PlayerData player_data = 1;
+  string error_msg = 2;
 }

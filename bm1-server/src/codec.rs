@@ -41,31 +41,24 @@ pub async fn write_frame<W: AsyncWrite + Unpin>(writer: &mut W, msg: &CsRpcMsg) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bm1_proto::message::{CsRpcCmd, PlaceholderReq}; // 测试用的命令枚举和请求结构
-    use bm1_proto::message::cs_rpc_msg::Payload; // oneof payload 枚举
+    use bm1_proto::message::{CsRpcCmd, LoginReq};
+    use bm1_proto::message::cs_rpc_msg::Payload;
 
     #[tokio::test]
     async fn test_codec_roundtrip() {
-        // 创建一对互联的读写端，模拟客户端-服务端通信
         let (mut client, mut server) = tokio::io::duplex(1024);
 
-        // 构造一条测试消息
         let msg = CsRpcMsg {
-            cmd: CsRpcCmd::Placeholder as i32, // Placeholder 命令
-            seq: 42,                           // 序列号 42
-            session_id: 1,                     // 会话 ID 1
-            payload: Some(Payload::PlaceholderReq(PlaceholderReq {
-                msg: "hello".to_string(),      // 测试消息内容
-            })),
+            cmd: CsRpcCmd::LoginReq as i32,
+            seq: 42,
+            session_id: 1,
+            payload: Some(Payload::LoginReq(LoginReq { player_id: 1 })),
         };
 
-        // 从 client 端写入消息
         write_frame(&mut client, &msg).await.unwrap();
-        // 从 server 端读出消息
         let decoded = read_frame(&mut server).await.unwrap();
 
-        // 验证编解码后字段一致
-        assert_eq!(decoded.cmd, CsRpcCmd::Placeholder as i32);
+        assert_eq!(decoded.cmd, CsRpcCmd::LoginReq as i32);
         assert_eq!(decoded.seq, 42);
         assert_eq!(decoded.session_id, 1);
     }
