@@ -8,7 +8,7 @@ pub struct CsRpcMsg {
     pub seq: u32,
     #[prost(uint32, tag = "3")]
     pub session_id: u32,
-    #[prost(oneof = "cs_rpc_msg::Payload", tags = "14, 15")]
+    #[prost(oneof = "cs_rpc_msg::Payload", tags = "14, 15, 16, 17")]
     pub payload: ::core::option::Option<cs_rpc_msg::Payload>,
 }
 /// Nested message and enum types in `CSRpcMsg`.
@@ -20,6 +20,10 @@ pub mod cs_rpc_msg {
         LoginReq(super::LoginReq),
         #[prost(message, tag = "15")]
         LoginResp(super::LoginResp),
+        #[prost(message, tag = "16")]
+        AddMoneyReq(super::AddMoneyReq),
+        #[prost(message, tag = "17")]
+        AddMoneyResp(super::AddMoneyResp),
     }
 }
 #[allow(non_camel_case_types)]
@@ -37,12 +41,30 @@ pub struct LoginResp {
     pub error_msg: ::prost::alloc::string::String,
 }
 #[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct AddMoneyReq {
+    #[prost(enumeration = "super::model::PlayerBagMoneyType", tag = "1")]
+    pub money_type: i32,
+    #[prost(uint32, tag = "2")]
+    pub amount: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddMoneyResp {
+    #[prost(uint32, tag = "1")]
+    pub money_count: u32,
+    #[prost(string, tag = "2")]
+    pub error_msg: ::prost::alloc::string::String,
+}
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CsRpcCmd {
     Unspecified = 0,
     LoginReq = 3,
     LoginResp = 4,
+    AddMoneyReq = 5,
+    AddMoneyResp = 6,
 }
 impl CsRpcCmd {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -54,6 +76,8 @@ impl CsRpcCmd {
             Self::Unspecified => "CS_RPC_CMD_UNSPECIFIED",
             Self::LoginReq => "CS_RPC_CMD_LOGIN_REQ",
             Self::LoginResp => "CS_RPC_CMD_LOGIN_RESP",
+            Self::AddMoneyReq => "CS_RPC_CMD_ADD_MONEY_REQ",
+            Self::AddMoneyResp => "CS_RPC_CMD_ADD_MONEY_RESP",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -62,6 +86,8 @@ impl CsRpcCmd {
             "CS_RPC_CMD_UNSPECIFIED" => Some(Self::Unspecified),
             "CS_RPC_CMD_LOGIN_REQ" => Some(Self::LoginReq),
             "CS_RPC_CMD_LOGIN_RESP" => Some(Self::LoginResp),
+            "CS_RPC_CMD_ADD_MONEY_REQ" => Some(Self::AddMoneyReq),
+            "CS_RPC_CMD_ADD_MONEY_RESP" => Some(Self::AddMoneyResp),
             _ => None,
         }
     }
