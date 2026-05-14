@@ -6,6 +6,7 @@ pub struct Session {
     pub id: u32,            // 会话唯一标识
     pub connected: bool,    // 是否在线（false 表示已断开，可重连）
     pub last_active: Instant, // 最后活跃时间戳
+    pub player_id: u64,     // 关联的玩家ID，0表示未登录
 }
 
 /// 会话管理器：统一管理所有客户端会话的创建、重连、断开
@@ -32,6 +33,7 @@ impl SessionManager {
                 id,                                  // 会话 ID
                 connected: true,                     // 标记为在线
                 last_active: Instant::now(),         // 记录创建时间
+                player_id: 0,                       // 默认未登录
             },
         );
         id // 返回分配的 ID
@@ -59,6 +61,20 @@ impl SessionManager {
     /// 根据会话 ID 查找会话（只读引用）
     pub fn get_session(&self, id: u32) -> Option<&Session> {
         self.sessions.get(&id)
+    }
+
+    /// 获取会话关联的玩家ID（0表示未登录，返回None）
+    pub fn player_id(&self, id: u32) -> Option<u64> {
+        self.sessions.get(&id).and_then(|s| {
+            if s.player_id == 0 { None } else { Some(s.player_id) }
+        })
+    }
+
+    /// 设置会话关联的玩家ID
+    pub fn set_player_id(&mut self, id: u32, player_id: u64) {
+        if let Some(session) = self.sessions.get_mut(&id) {
+            session.player_id = player_id;
+        }
     }
 }
 
@@ -99,5 +115,15 @@ mod tests {
         let mut mgr = SessionManager::new();
         let id = mgr.create_session(); // 创建会话（已在线）
         assert!(!mgr.reconnect(id));   // 在线会话重连应失败
+    }
+
+    #[test]
+    fn test_session_player_id() {
+        let mut mgr = SessionManager::new();
+        let id = mgr.create_session();
+        assert_eq!(mgr.player_id(id), None);
+
+        mgr.set_player_id(id, 42);
+        assert_eq!(mgr.player_id(id), Some(42));
     }
 }
