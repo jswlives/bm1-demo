@@ -3,10 +3,11 @@ use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
 
+use bm1_proto::message::cs_rpc_msg::Payload;
 use bm1_proto::message::{CsRpcCmd, CsRpcMsg};
 
 use crate::codec;
-use crate::handler::LoginHandler;
+use crate::handler::{AddMoneyHandler, LoginHandler};
 use crate::router::{Context, Router};
 use crate::session::SessionManager;
 
@@ -42,6 +43,7 @@ impl Server {
     fn build_router() -> Router {
         let mut router = Router::new();
         router.register(CsRpcCmd::LoginReq as i32, Box::new(LoginHandler));
+        router.register(CsRpcCmd::AddMoneyReq as i32, Box::new(AddMoneyHandler));
         router
     }
 }
@@ -80,8 +82,24 @@ async fn handle_connection(
                     println!("session {} established", session_id);
                 }
 
-                let ctx = Context { session_id, player_id: 0 };
+                let player_id = mgr.lock().await.player_id(session_id).unwrap_or(0);
+
+                // Extract login player_id before dispatch consumes msg
+                let login_player_id = match &msg.payload {
+                    Some(Payload::LoginReq(req)) => Some(req.player_id as u64),
+                    _ => None,
+                };
+
+                let ctx = Context { session_id, player_id };
                 if let Some(mut resp) = router.dispatch(&ctx, msg) {
+                    // Bind player_id to session after successful login
+                    if login_player_id.is_some() && player_id == 0 {
+                        if let Some(Payload::LoginResp(ref login_resp)) = resp.payload {
+                            if login_resp.error_msg.is_empty() {
+                                mgr.lock().await.set_player_id(session_id, login_player_id.unwrap());
+                            }
+                        }
+                    }
                     resp.session_id = session_id;
                     let _ = write_tx.send(resp).await;
                 }
