@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{LazyLock, RwLock};
 
 use bm1_proto::model::{PlayerBag, PlayerBagItem, PlayerBagMoney, PlayerBagMoneyType, PlayerBase, PlayerData};
 
@@ -10,7 +10,7 @@ pub struct PlayerPool {
     players: HashMap<u64, Player>,
 }
 
-static PLAYER_POOL: LazyLock<PlayerPool> = LazyLock::new(|| {
+static PLAYER_POOL: LazyLock<RwLock<PlayerPool>> = LazyLock::new(|| {
     let mut pool = PlayerPool::new();
     pool.load(PlayerData {
         player_base: Some(PlayerBase {
@@ -49,12 +49,12 @@ static PLAYER_POOL: LazyLock<PlayerPool> = LazyLock::new(|| {
             ],
         }),
     });
-    pool
+    RwLock::new(pool)
 });
 
 impl PlayerPool {
     /// 获取全局玩家池实例
-    pub fn global() -> &'static PlayerPool {
+    pub fn global() -> &'static RwLock<PlayerPool> {
         &PLAYER_POOL
     }
 
@@ -153,6 +153,15 @@ mod tests {
 
         pool.get_mut(1).unwrap().add_gold(100);
         assert_eq!(pool.get(1).unwrap().gold(), 100);
+    }
+
+    #[test]
+    fn test_global_mut() {
+        let mut pool = PlayerPool::global().write().unwrap();
+        pool.get_mut(1).unwrap().add_gold(100);
+        assert_eq!(pool.get(1).unwrap().gold(), 1100);
+        // Restore
+        pool.get_mut(1).unwrap().sub_gold(100).unwrap();
     }
 
     #[test]

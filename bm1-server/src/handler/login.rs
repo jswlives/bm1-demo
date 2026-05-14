@@ -13,9 +13,12 @@ impl MessageHandler for LoginHandler {
             _ => return None,
         };
 
-        let (player_data, error_msg) = match PlayerPool::global().get(player_id as u64) {
-            Some(player) => (Some(player.data().clone()), String::new()),
-            None => (None, format!("player {} not found", player_id)),
+        let (player_data, error_msg) = {
+            let pool = PlayerPool::global().read().unwrap();
+            match pool.get(player_id as u64) {
+                Some(player) => (Some(player.data().clone()), String::new()),
+                None => (None, format!("player {} not found", player_id)),
+            }
         };
 
         Some(CsRpcMsg {
