@@ -4,7 +4,8 @@ use bm1_proto::message::CsRpcMsg; // protobuf RPC 消息类型
 
 /// 路由上下文，在分发时传递给 handler 的环境信息
 pub struct Context {
-    pub session_id: u32, // 当前连接的会话 ID
+    pub session_id: u32,
+    pub player_id: u64,
 }
 
 /// 消息处理器 trait：所有命令处理器必须实现此接口
@@ -61,7 +62,7 @@ mod tests {
         let mut router = Router::new();
         router.register(CsRpcCmd::LoginReq as i32, Box::new(EchoHandler));
 
-        let ctx = Context { session_id: 1 };
+        let ctx = Context { session_id: 1, player_id: 0 };
         let msg = CsRpcMsg {
             cmd: CsRpcCmd::LoginReq as i32,
             seq: 1,                           // 序列号 1
@@ -77,7 +78,7 @@ mod tests {
     #[test]
     fn test_dispatch_unknown_cmd() {
         let router = Router::new(); // 空路由，无注册 handler
-        let ctx = Context { session_id: 1 };
+        let ctx = Context { session_id: 1, player_id: 0 };
         let msg = CsRpcMsg {
             cmd: 999, // 未注册的命令号
             seq: 1,

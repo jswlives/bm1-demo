@@ -80,7 +80,7 @@ async fn handle_connection(
                     println!("session {} established", session_id);
                 }
 
-                let ctx = Context { session_id };
+                let ctx = Context { session_id, player_id: 0 };
                 if let Some(mut resp) = router.dispatch(&ctx, msg) {
                     resp.session_id = session_id;
                     let _ = write_tx.send(resp).await;
