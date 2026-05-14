@@ -22,6 +22,13 @@ Requires `protoc` installed (`brew install protobuf` on macOS, `apt install prot
 
 Cargo workspace with three crates: `bm1-server`, `bm1-client`, `bm1-proto`.
 
+```
+bm1-server/          # TCP server (package: bm1-server)
+client/              # Interactive client (package: bm1-client)
+share/proto/         # Protobuf definitions (package: bm1-proto)
+share/protos_build/  # Generated Rust types (message.rs, model.rs)
+```
+
 ### Data Flow
 
 ```
@@ -34,14 +41,24 @@ Client TCP → Server accept → spawn task per connection
 
 ### Key Design Decisions
 
-- **prost type names**: prost converts proto names — `CSRpcMsg` → `CsRpcMsg`, `CSRpcCmd` → `CsRpcCmd`. The oneof `payload` generates `cs_rpc_msg::Payload` enum with variants like `Payload::PlaceholderReq(...)`. The `cmd` field on `CsRpcMsg` is `i32`, not the enum type. `build.rs` adds `#[allow(non_camel_case_types)]` to suppress warnings.
+- **prost type names**: prost converts proto names — `CSRpcMsg` → `CsRpcMsg`, `CSRpcCmd` → `CsRpcCmd`. The oneof `payload` generates `cs_rpc_msg::Payload` enum with variants like `Payload::LoginReq(...)`. The `cmd` field on `CsRpcMsg` is `i32`, not the enum type. `build.rs` adds `#[allow(non_camel_case_types)]` to suppress warnings.
 - **Session lifecycle**: First message from client determines session — `session_id == 0` creates new, non-zero attempts reconnect. `SessionManager` tracks sessions in `HashMap<u32, Session>` behind `Arc<Mutex<...>>`.
-- **Connection handling**: TCP stream split into read/write halves. Write side driven by `mpsc::channel` so both handler responses and heartbeat sends can write without contention. Heartbeat sends every 10s, 30s idle timeout disconnects.
+- **Connection handling**: TCP stream split into read/write halves. Write side driven by `mpsc::channel` so handler responses can write without contention. On disconnect, session is marked offline (supports reconnect later).
 - **Handler trait**: `MessageHandler::handle(&self, ctx: &Context, msg: CsRpcMsg) -> Option<CsRpcMsg>`. Return `Some` to send response, `None` to drop. Handlers are `Send + Sync` trait objects in `Router`'s `HashMap<i32, Box<dyn MessageHandler>>`.
+
+### Model Layer
+
+Server-side domain models in `bm1-server/src/model/`:
+
+- **Player**: Wraps `PlayerData` (proto type) with convenience methods for base attributes (name, level), money (gold/diamond add/sub), and items (add/sub with zero-removal). Uses `ensure_base()`/`ensure_bag()` to lazily initialize optional proto fields.
+- **PlayerPool**: Global player pool via `LazyLock<PlayerPool>`. Keyed by `player_id` (u64). Pre-loaded with two test players (alice=1, bob=2). Accessed through `PlayerPool::global()`.
+
+Proto models defined in `model.proto`: `PlayerBase`, `PlayerBag`, `PlayerBagItem`, `PlayerBagMoney`, `PlayerBagMoneyType`, `PlayerData`.
 
 ### Adding a New Command
 
-1. Add enum value to `CSRpcCmd` and message/oneof fields to `share/proto/protos/message.proto` (field numbers start at 14 for new payload fields)
-2. `cargo build -p bm1-proto` to regenerate types
-3. Create handler in `bm1-server/src/handler/` implementing `MessageHandler`
-4. Export in `handler/mod.rs`, register in `server.rs` `build_router()`
+1. Add enum value to `CSRpcCmd` and message/oneof fields to `share/proto/protos/message.proto` (next available oneof field number is 16)
+2. If the command needs new data types, add them to `share/proto/protos/model.proto`
+3. `cargo build -p bm1-proto` to regenerate types
+4. Create handler in `bm1-server/src/handler/` implementing `MessageHandler`
+5. Export in `handler/mod.rs`, register in `server.rs` `build_router()`
