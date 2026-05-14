@@ -14,8 +14,7 @@ bm1-server/src/
 ├── codec.rs           # Unchanged
 ├── router.rs          # Unchanged
 ├── handler/
-│   ├── mod.rs         # Export placeholder, login (remove heartbeat)
-│   ├── placeholder.rs # Unchanged
+│   ├── mod.rs         # Export login only (remove heartbeat, placeholder)
 │   └── login.rs       # New: parse LoginReq, call logic, return LoginResp
 ├── logic/
 │   ├── mod.rs         # Export login, model
@@ -39,16 +38,17 @@ bm1-server/src/
 
 No changes needed. `PlayerData` is already defined.
 
-## 3. Remove Heartbeat
+## 3. Remove Heartbeat & Placeholder
 
 - Delete `bm1-server/src/handler/heartbeat.rs`
-- Remove heartbeat handler registration from `server.rs` `build_router()`
-- Remove heartbeat export from `handler/mod.rs`
+- Delete `bm1-server/src/handler/placeholder.rs`
+- Remove both handler registrations from `server.rs` `build_router()`
+- Remove both exports from `handler/mod.rs`
 - In `server.rs`, simplify the connection loop:
   - Remove 10s heartbeat tick
   - Remove 30s idle timeout
   - Keep only frame reading in `tokio::select!`
-- Client: remove heartbeat menu item and send logic
+- Client: remove heartbeat and placeholder menu items and send logic
 
 ## 4. Login Flow
 
@@ -88,9 +88,8 @@ Pre-fill test data so clients can verify login works:
 ### Menu (final)
 
 ```
-1. Placeholder
-2. Login
-3. Quit
+1. Login
+2. Quit
 ```
 
 ### PlayerData cache
@@ -112,6 +111,6 @@ static PLAYER_DATA: OnceLock<RwLock<Option<PlayerData>>> = OnceLock::new();
 2. Move model files from `logic/model/` to `model/`
 3. Create `logic/login.rs` with login business logic
 4. Create `handler/login.rs` with login handler
-5. Remove heartbeat handler and simplify server.rs
+5. Remove heartbeat and placeholder handlers, simplify server.rs
 6. Update client: login menu + PlayerData cache
 7. `cargo build` to verify
