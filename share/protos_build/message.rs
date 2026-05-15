@@ -8,7 +8,7 @@ pub struct CsRpcMsg {
     pub seq: u32,
     #[prost(uint32, tag = "3")]
     pub session_id: u32,
-    #[prost(oneof = "cs_rpc_msg::Payload", tags = "14, 15, 16, 17")]
+    #[prost(oneof = "cs_rpc_msg::Payload", tags = "14, 15, 16, 17, 18")]
     pub payload: ::core::option::Option<cs_rpc_msg::Payload>,
 }
 /// Nested message and enum types in `CSRpcMsg`.
@@ -24,6 +24,8 @@ pub mod cs_rpc_msg {
         AddMoneyReq(super::AddMoneyReq),
         #[prost(message, tag = "17")]
         AddMoneyResp(super::AddMoneyResp),
+        #[prost(message, tag = "18")]
+        PlayerDataNotify(super::PlayerDataNotify),
     }
 }
 #[allow(non_camel_case_types)]
@@ -57,6 +59,14 @@ pub struct AddMoneyResp {
     pub error_msg: ::prost::alloc::string::String,
 }
 #[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PlayerDataNotify {
+    #[prost(message, optional, tag = "1")]
+    pub delta: ::core::option::Option<super::model::PlayerDataDelta>,
+    #[prost(string, tag = "2")]
+    pub reason: ::prost::alloc::string::String,
+}
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CsRpcCmd {
@@ -65,6 +75,7 @@ pub enum CsRpcCmd {
     LoginResp = 4,
     AddMoneyReq = 5,
     AddMoneyResp = 6,
+    PlayerDataNotify = 7,
 }
 impl CsRpcCmd {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -78,6 +89,7 @@ impl CsRpcCmd {
             Self::LoginResp => "CS_RPC_CMD_LOGIN_RESP",
             Self::AddMoneyReq => "CS_RPC_CMD_ADD_MONEY_REQ",
             Self::AddMoneyResp => "CS_RPC_CMD_ADD_MONEY_RESP",
+            Self::PlayerDataNotify => "CS_RPC_CMD_PLAYER_DATA_NOTIFY",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -88,6 +100,7 @@ impl CsRpcCmd {
             "CS_RPC_CMD_LOGIN_RESP" => Some(Self::LoginResp),
             "CS_RPC_CMD_ADD_MONEY_REQ" => Some(Self::AddMoneyReq),
             "CS_RPC_CMD_ADD_MONEY_RESP" => Some(Self::AddMoneyResp),
+            "CS_RPC_CMD_PLAYER_DATA_NOTIFY" => Some(Self::PlayerDataNotify),
             _ => None,
         }
     }

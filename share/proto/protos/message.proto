@@ -12,6 +12,7 @@ message CSRpcMsg {
     LoginResp login_resp = 15;
     AddMoneyReq add_money_req = 16;
     AddMoneyResp add_money_resp = 17;
+    PlayerDataNotify player_data_notify = 18;
   }
 }
 
@@ -21,6 +22,7 @@ enum CSRpcCmd {
   CS_RPC_CMD_LOGIN_RESP = 4;
   CS_RPC_CMD_ADD_MONEY_REQ = 5;
   CS_RPC_CMD_ADD_MONEY_RESP = 6;
+  CS_RPC_CMD_PLAYER_DATA_NOTIFY = 7;
 }
 
 message LoginReq {
@@ -40,4 +42,9 @@ message AddMoneyReq {
 message AddMoneyResp {
   uint32 money_count = 1;
   string error_msg = 2;
+}
+
+message PlayerDataNotify {
+  model.PlayerDataDelta delta = 1;
+  string reason = 2;
 }
