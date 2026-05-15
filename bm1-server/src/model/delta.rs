@@ -1,17 +1,18 @@
 use bm1_proto::model::{
-    DeltaOp, PlayerBagDelta, PlayerBagItemDelta, PlayerBagMoneyDelta, PlayerBagMoneyType,
-    PlayerBaseDelta, PlayerData, PlayerDataDelta,
+    DeltaOp, PlayerBagDelta, PlayerBagItemDelta, PlayerBagMoneyDelta,
+    PlayerBaseDelta, PlayerData, PlayerDataDelta, PlayerSkillDataDelta, PlayerSkillDelta,
 };
 
 pub fn diff_player_data(before: &PlayerData, after: &PlayerData) -> Option<PlayerDataDelta> {
     let base = diff_base(before, after);
     let bag = diff_bag(before, after);
+    let skill = diff_skill(before, after);
 
-    if base.is_none() && bag.is_none() {
+    if base.is_none() && bag.is_none() && skill.is_none() {
         return None;
     }
 
-    Some(PlayerDataDelta { base, bag })
+    Some(PlayerDataDelta { base, bag, skill })
 }
 
 // Only diffs player_level; player_id and player_name are immutable at runtime.
@@ -120,10 +121,63 @@ fn diff_items(before: &PlayerData, after: &PlayerData) -> Vec<PlayerBagItemDelta
 static EMPTY_MONEY: Vec<bm1_proto::model::PlayerBagMoney> = Vec::new();
 static EMPTY_ITEMS: Vec<bm1_proto::model::PlayerBagItem> = Vec::new();
 
+fn diff_skill(before: &PlayerData, after: &PlayerData) -> Option<PlayerSkillDataDelta> {
+    let before_skill = before.player_skill.as_ref();
+    let after_skill = after.player_skill.as_ref();
+
+    let before_points = before_skill.map(|s| s.skill_points).unwrap_or(0);
+    let after_points = after_skill.map(|s| s.skill_points).unwrap_or(0);
+
+    let before_skills = before_skill.map(|s| &s.skills).unwrap_or(&EMPTY_SKILLS);
+    let after_skills = after_skill.map(|s| &s.skills).unwrap_or(&EMPTY_SKILLS);
+
+    let points_changed = before_points != after_points;
+
+    let mut skill_changes = Vec::new();
+
+    for as_ in after_skills {
+        let before_level = before_skills
+            .iter()
+            .find(|s| s.skill_id == as_.skill_id)
+            .map(|s| s.skill_level)
+            .unwrap_or(0);
+
+        if as_.skill_level != before_level {
+            skill_changes.push(PlayerSkillDelta {
+                op: DeltaOp::Upsert as i32,
+                skill_id: as_.skill_id,
+                skill_level: as_.skill_level,
+            });
+        }
+    }
+
+    for bs in before_skills {
+        let exists_in_after = after_skills.iter().any(|s| s.skill_id == bs.skill_id);
+        if !exists_in_after {
+            skill_changes.push(PlayerSkillDelta {
+                op: DeltaOp::Delete as i32,
+                skill_id: bs.skill_id,
+                skill_level: 0,
+            });
+        }
+    }
+
+    if !points_changed && skill_changes.is_empty() {
+        return None;
+    }
+
+    Some(PlayerSkillDataDelta {
+        skill_points: if points_changed { Some(after_points) } else { None },
+        skill_changes,
+    })
+}
+
+static EMPTY_SKILLS: Vec<bm1_proto::model::PlayerSkill> = Vec::new();
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bm1_proto::model::{PlayerBag, PlayerBagItem, PlayerBagMoney, PlayerBase};
+    use bm1_proto::model::{PlayerBag, PlayerBagItem, PlayerBagMoney, PlayerBagMoneyType, PlayerBase};
 
     fn make_player_data(level: u32, gold: u32, diamond: u32, items: Vec<(u32, u32)>) -> PlayerData {
         PlayerData {
@@ -139,6 +193,7 @@ mod tests {
                     PlayerBagMoney { money_type: PlayerBagMoneyType::Diamond as i32, money_count: diamond },
                 ],
             }),
+            player_skill: None,
         }
     }
 

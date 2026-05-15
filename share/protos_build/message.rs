@@ -8,7 +8,7 @@ pub struct CsRpcMsg {
     pub seq: u32,
     #[prost(uint32, tag = "3")]
     pub session_id: u32,
-    #[prost(oneof = "cs_rpc_msg::Payload", tags = "14, 15, 16, 17, 18")]
+    #[prost(oneof = "cs_rpc_msg::Payload", tags = "14, 15, 16, 17, 18, 19, 20, 21, 22")]
     pub payload: ::core::option::Option<cs_rpc_msg::Payload>,
 }
 /// Nested message and enum types in `CSRpcMsg`.
@@ -26,6 +26,14 @@ pub mod cs_rpc_msg {
         AddMoneyResp(super::AddMoneyResp),
         #[prost(message, tag = "18")]
         PlayerDataNotify(super::PlayerDataNotify),
+        #[prost(message, tag = "19")]
+        SkillUnlockReq(super::SkillUnlockReq),
+        #[prost(message, tag = "20")]
+        SkillUnlockResp(super::SkillUnlockResp),
+        #[prost(message, tag = "21")]
+        SkillUpgradeReq(super::SkillUpgradeReq),
+        #[prost(message, tag = "22")]
+        SkillUpgradeResp(super::SkillUpgradeResp),
     }
 }
 #[allow(non_camel_case_types)]
@@ -67,6 +75,46 @@ pub struct PlayerDataNotify {
     pub reason: ::prost::alloc::string::String,
 }
 #[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct SkillUnlockReq {
+    #[prost(uint32, tag = "1")]
+    pub skill_id: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SkillUnlockResp {
+    #[prost(int32, tag = "1")]
+    pub result: i32,
+    #[prost(string, tag = "2")]
+    pub error_msg: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "3")]
+    pub skill_id: u32,
+    #[prost(uint32, tag = "4")]
+    pub skill_level: u32,
+    #[prost(uint32, tag = "5")]
+    pub remaining_skill_points: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct SkillUpgradeReq {
+    #[prost(uint32, tag = "1")]
+    pub skill_id: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SkillUpgradeResp {
+    #[prost(int32, tag = "1")]
+    pub result: i32,
+    #[prost(string, tag = "2")]
+    pub error_msg: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "3")]
+    pub skill_id: u32,
+    #[prost(uint32, tag = "4")]
+    pub skill_level: u32,
+    #[prost(uint32, tag = "5")]
+    pub remaining_skill_points: u32,
+}
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CsRpcCmd {
@@ -76,6 +124,10 @@ pub enum CsRpcCmd {
     AddMoneyReq = 5,
     AddMoneyResp = 6,
     PlayerDataNotify = 7,
+    SkillUnlockReq = 8,
+    SkillUnlockResp = 9,
+    SkillUpgradeReq = 10,
+    SkillUpgradeResp = 11,
 }
 impl CsRpcCmd {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -90,6 +142,10 @@ impl CsRpcCmd {
             Self::AddMoneyReq => "CS_RPC_CMD_ADD_MONEY_REQ",
             Self::AddMoneyResp => "CS_RPC_CMD_ADD_MONEY_RESP",
             Self::PlayerDataNotify => "CS_RPC_CMD_PLAYER_DATA_NOTIFY",
+            Self::SkillUnlockReq => "CS_RPC_CMD_SKILL_UNLOCK_REQ",
+            Self::SkillUnlockResp => "CS_RPC_CMD_SKILL_UNLOCK_RESP",
+            Self::SkillUpgradeReq => "CS_RPC_CMD_SKILL_UPGRADE_REQ",
+            Self::SkillUpgradeResp => "CS_RPC_CMD_SKILL_UPGRADE_RESP",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -101,6 +157,10 @@ impl CsRpcCmd {
             "CS_RPC_CMD_ADD_MONEY_REQ" => Some(Self::AddMoneyReq),
             "CS_RPC_CMD_ADD_MONEY_RESP" => Some(Self::AddMoneyResp),
             "CS_RPC_CMD_PLAYER_DATA_NOTIFY" => Some(Self::PlayerDataNotify),
+            "CS_RPC_CMD_SKILL_UNLOCK_REQ" => Some(Self::SkillUnlockReq),
+            "CS_RPC_CMD_SKILL_UNLOCK_RESP" => Some(Self::SkillUnlockResp),
+            "CS_RPC_CMD_SKILL_UPGRADE_REQ" => Some(Self::SkillUpgradeReq),
+            "CS_RPC_CMD_SKILL_UPGRADE_RESP" => Some(Self::SkillUpgradeResp),
             _ => None,
         }
     }

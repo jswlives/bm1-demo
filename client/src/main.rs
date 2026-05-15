@@ -69,6 +69,34 @@ fn apply_delta(cache: &mut PlayerData, delta: &bm1_proto::model::PlayerDataDelta
             }
         }
     }
+
+    if let Some(skill_delta) = &delta.skill {
+        let skill = cache.player_skill.get_or_insert_with(bm1_proto::model::PlayerSkillData::default);
+
+        if let Some(points) = skill_delta.skill_points {
+            skill.skill_points = points;
+        }
+
+        for skill_change in &skill_delta.skill_changes {
+            let op = bm1_proto::model::DeltaOp::try_from(skill_change.op).unwrap_or(bm1_proto::model::DeltaOp::Unspecified);
+            match op {
+                bm1_proto::model::DeltaOp::Upsert => {
+                    if let Some(existing) = skill.skills.iter_mut().find(|s| s.skill_id == skill_change.skill_id) {
+                        existing.skill_level = skill_change.skill_level;
+                    } else {
+                        skill.skills.push(bm1_proto::model::PlayerSkill {
+                            skill_id: skill_change.skill_id,
+                            skill_level: skill_change.skill_level,
+                        });
+                    }
+                }
+                bm1_proto::model::DeltaOp::Delete => {
+                    skill.skills.retain(|s| s.skill_id != skill_change.skill_id);
+                }
+                _ => {}
+            }
+        }
+    }
 }
 
 fn handle_notify(msg: &CsRpcMsg) {

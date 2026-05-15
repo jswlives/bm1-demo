@@ -91,6 +91,26 @@ mod tests {
         }
     }
 
+    fn setup_player() {
+        use bm1_proto::model::{PlayerBag, PlayerBagMoney, PlayerBase, PlayerData};
+        let mut pool = PlayerPool::global().write().unwrap();
+        pool.load(PlayerData {
+            player_base: Some(PlayerBase {
+                player_id: 101,
+                player_name: "alice".into(),
+                player_level: 10,
+            }),
+            player_bag: Some(PlayerBag {
+                items: vec![],
+                money: vec![PlayerBagMoney {
+                    money_type: PlayerBagMoneyType::Gold as i32,
+                    money_count: 1000,
+                }],
+            }),
+            player_skill: None,
+        });
+    }
+
     #[test]
     fn test_add_money_not_logged_in() {
         let handler = AddMoneyHandler;
@@ -109,8 +129,9 @@ mod tests {
 
     #[test]
     fn test_add_money_gold() {
+        setup_player();
         let handler = AddMoneyHandler;
-        let ctx = Context { session_id: 1, player_id: 1 };
+        let ctx = Context { session_id: 1, player_id: 101 };
         let msg = make_add_money_msg(PlayerBagMoneyType::Gold as i32, 50);
 
         let resp = handler.handle(&ctx, msg).unwrap();
@@ -122,13 +143,13 @@ mod tests {
         }
 
         // Restore
-        PlayerPool::global().write().unwrap().get_mut(1).unwrap().sub_gold(50).unwrap();
+        PlayerPool::global().write().unwrap().get_mut(101).unwrap().sub_gold(50).unwrap();
     }
 
     #[test]
     fn test_add_money_invalid_type() {
         let handler = AddMoneyHandler;
-        let ctx = Context { session_id: 1, player_id: 1 };
+        let ctx = Context { session_id: 1, player_id: 101 };
         let msg = make_add_money_msg(0, 100); // Unspecified
 
         let resp = handler.handle(&ctx, msg).unwrap();

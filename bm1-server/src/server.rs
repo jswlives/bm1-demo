@@ -8,7 +8,7 @@ use bm1_proto::message::PlayerDataNotify;
 use bm1_proto::message::{CsRpcCmd, CsRpcMsg};
 
 use crate::codec;
-use crate::handler::{AddMoneyHandler, LoginHandler};
+use crate::handler::{AddMoneyHandler, LoginHandler, SkillUnlockHandler, SkillUpgradeHandler};
 use crate::router::{Context, Router};
 use crate::session::SessionManager;
 
@@ -45,6 +45,8 @@ impl Server {
         let mut router = Router::new();
         router.register(CsRpcCmd::LoginReq as i32, Box::new(LoginHandler));
         router.register(CsRpcCmd::AddMoneyReq as i32, Box::new(AddMoneyHandler));
+        router.register(CsRpcCmd::SkillUnlockReq as i32, Box::new(SkillUnlockHandler));
+        router.register(CsRpcCmd::SkillUpgradeReq as i32, Box::new(SkillUpgradeHandler));
         router
     }
 }

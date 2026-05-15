@@ -13,6 +13,10 @@ message CSRpcMsg {
     AddMoneyReq add_money_req = 16;
     AddMoneyResp add_money_resp = 17;
     PlayerDataNotify player_data_notify = 18;
+    SkillUnlockReq skill_unlock_req = 19;
+    SkillUnlockResp skill_unlock_resp = 20;
+    SkillUpgradeReq skill_upgrade_req = 21;
+    SkillUpgradeResp skill_upgrade_resp = 22;
   }
 }
 
@@ -23,6 +27,10 @@ enum CSRpcCmd {
   CS_RPC_CMD_ADD_MONEY_REQ = 5;
   CS_RPC_CMD_ADD_MONEY_RESP = 6;
   CS_RPC_CMD_PLAYER_DATA_NOTIFY = 7;
+  CS_RPC_CMD_SKILL_UNLOCK_REQ = 8;
+  CS_RPC_CMD_SKILL_UNLOCK_RESP = 9;
+  CS_RPC_CMD_SKILL_UPGRADE_REQ = 10;
+  CS_RPC_CMD_SKILL_UPGRADE_RESP = 11;
 }
 
 message LoginReq {
@@ -47,4 +55,28 @@ message AddMoneyResp {
 message PlayerDataNotify {
   model.PlayerDataDelta delta = 1;
   string reason = 2;
+}
+
+message SkillUnlockReq {
+  uint32 skill_id = 1;
+}
+
+message SkillUnlockResp {
+  int32 result = 1;
+  string error_msg = 2;
+  uint32 skill_id = 3;
+  uint32 skill_level = 4;
+  uint32 remaining_skill_points = 5;
+}
+
+message SkillUpgradeReq {
+  uint32 skill_id = 1;
+}
+
+message SkillUpgradeResp {
+  int32 result = 1;
+  string error_msg = 2;
+  uint32 skill_id = 3;
+  uint32 skill_level = 4;
+  uint32 remaining_skill_points = 5;
 }

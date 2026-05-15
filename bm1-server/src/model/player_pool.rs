@@ -25,6 +25,7 @@ static PLAYER_POOL: LazyLock<RwLock<PlayerPool>> = LazyLock::new(|| {
                 money_count: 1000,
             }],
         }),
+        player_skill: None,
     });
     pool.load(PlayerData {
         player_base: Some(PlayerBase {
@@ -48,6 +49,7 @@ static PLAYER_POOL: LazyLock<RwLock<PlayerPool>> = LazyLock::new(|| {
                 },
             ],
         }),
+        player_skill: None,
     });
     RwLock::new(pool)
 });
@@ -118,6 +120,7 @@ mod tests {
                 player_level: 1,
             }),
             player_bag: Some(PlayerBag::default()),
+            player_skill: None,
         }
     }
 
@@ -158,10 +161,24 @@ mod tests {
     #[test]
     fn test_global_mut() {
         let mut pool = PlayerPool::global().write().unwrap();
-        pool.get_mut(1).unwrap().add_gold(100);
-        assert_eq!(pool.get(1).unwrap().gold(), 1100);
-        // Restore
-        pool.get_mut(1).unwrap().sub_gold(100).unwrap();
+        pool.load(PlayerData {
+            player_base: Some(PlayerBase {
+                player_id: 104,
+                player_name: "alice".into(),
+                player_level: 10,
+            }),
+            player_bag: Some(PlayerBag {
+                items: vec![],
+                money: vec![PlayerBagMoney {
+                    money_type: PlayerBagMoneyType::Gold as i32,
+                    money_count: 1000,
+                }],
+            }),
+            player_skill: None,
+        });
+        pool.get_mut(104).unwrap().add_gold(100);
+        assert_eq!(pool.get(104).unwrap().gold(), 1100);
+        pool.get_mut(104).unwrap().sub_gold(100).unwrap();
     }
 
     #[test]

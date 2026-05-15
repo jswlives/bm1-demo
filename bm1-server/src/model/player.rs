@@ -1,4 +1,4 @@
-use bm1_proto::model::{PlayerBag, PlayerBagItem, PlayerBagMoney, PlayerBagMoneyType, PlayerBase, PlayerData};
+use bm1_proto::model::{PlayerBag, PlayerBagItem, PlayerBagMoney, PlayerBagMoneyType, PlayerBase, PlayerData, PlayerSkill, PlayerSkillData};
 
 /// 加载后的玩家实例，封装对 PlayerData 的数据操作
 pub struct Player {
@@ -168,6 +168,56 @@ impl Player {
         // 简单实现：经验直接加到等级上，后续可替换为经验表
         self.add_level(exp)
     }
+
+    // ---- Skill ----
+
+    fn ensure_skill(&mut self) -> &mut PlayerSkillData {
+        if self.data.player_skill.is_none() {
+            self.data.player_skill = Some(PlayerSkillData::default());
+        }
+        self.data.player_skill.as_mut().unwrap()
+    }
+
+    pub fn skill_points(&self) -> u32 {
+        self.data.player_skill.as_ref().map(|s| s.skill_points).unwrap_or(0)
+    }
+
+    pub fn add_skill_points(&mut self, amount: u32) -> u32 {
+        self.ensure_skill().skill_points = self.ensure_skill().skill_points.saturating_add(amount);
+        self.skill_points()
+    }
+
+    pub fn skill_level(&self, skill_id: u32) -> Option<u32> {
+        self.data.player_skill.as_ref()?
+            .skills.iter()
+            .find(|s| s.skill_id == skill_id)
+            .map(|s| s.skill_level)
+    }
+
+    pub fn unlock_skill(&mut self, skill_id: u32) -> Result<(u32, u32), &'static str> {
+        if self.skill_level(skill_id).is_some() {
+            return Err("skill already unlocked");
+        }
+        let skill = self.ensure_skill();
+        if skill.skill_points < 1 {
+            return Err("insufficient skill points");
+        }
+        skill.skill_points -= 1;
+        skill.skills.push(PlayerSkill { skill_id, skill_level: 1 });
+        Ok((skill_id, 1))
+    }
+
+    pub fn upgrade_skill(&mut self, skill_id: u32) -> Result<(u32, u32), &'static str> {
+        let skill = self.ensure_skill();
+        let existing = skill.skills.iter_mut().find(|s| s.skill_id == skill_id)
+            .ok_or("skill not unlocked")?;
+        if skill.skill_points < 1 {
+            return Err("insufficient skill points");
+        }
+        skill.skill_points -= 1;
+        existing.skill_level = existing.skill_level.saturating_add(1);
+        Ok((skill_id, existing.skill_level))
+    }
 }
 
 #[cfg(test)]
@@ -185,6 +235,7 @@ mod tests {
                 items: vec![PlayerBagItem { item_id: 100, item_count: 5 }],
                 money: vec![PlayerBagMoney { money_type: PlayerBagMoneyType::Gold as i32, money_count: 100 }],
             }),
+            player_skill: None,
         })
     }
 
