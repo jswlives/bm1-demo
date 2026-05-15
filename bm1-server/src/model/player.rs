@@ -1,4 +1,4 @@
-use bm1_proto::model::{PlayerBag, PlayerBagItem, PlayerBagMoney, PlayerBagMoneyType, PlayerBase, PlayerData, PlayerSkill, PlayerSkillData};
+use bm1_proto::model::{PlayerBag, PlayerBagItem, PlayerBagMoney, PlayerBagMoneyType, PlayerBase, PlayerData, PlayerEquip, PlayerEquipData, PlayerSkill, PlayerSkillData};
 
 /// 加载后的玩家实例，封装对 PlayerData 的数据操作
 pub struct Player {
@@ -218,6 +218,47 @@ impl Player {
         existing.skill_level = existing.skill_level.saturating_add(1);
         Ok((skill_id, existing.skill_level))
     }
+
+    // ---- Equip ----
+
+    fn ensure_equip(&mut self) -> &mut PlayerEquipData {
+        if self.data.player_equip.is_none() {
+            self.data.player_equip = Some(PlayerEquipData::default());
+        }
+        self.data.player_equip.as_mut().unwrap()
+    }
+
+    fn find_equip(&self, equip_id: u32) -> Option<&PlayerEquip> {
+        self.data.player_equip.as_ref()?
+            .equips.iter()
+            .find(|e| e.equip_id == equip_id)
+    }
+
+    pub fn equip_level(&self, equip_id: u32) -> Option<u32> {
+        self.find_equip(equip_id).map(|e| e.equip_level)
+    }
+
+    pub fn buy_equip(&mut self, equip_id: u32) -> Result<(u32, u32), &'static str> {
+        if self.find_equip(equip_id).is_some() {
+            return Err("equip already owned");
+        }
+        self.sub_gold(500)?;
+        self.ensure_equip().equips.push(PlayerEquip { equip_id, equip_level: 1 });
+        Ok((equip_id, 1))
+    }
+
+    pub fn upgrade_equip(&mut self, equip_id: u32) -> Result<(u32, u32), &'static str> {
+        // validate ownership first
+        if self.find_equip(equip_id).is_none() {
+            return Err("equip not owned");
+        }
+        self.sub_gold(100)?;
+        let equip = self.ensure_equip().equips.iter_mut()
+            .find(|e| e.equip_id == equip_id)
+            .unwrap(); // safe: validated above
+        equip.equip_level = equip.equip_level.saturating_add(1);
+        Ok((equip_id, equip.equip_level))
+    }
 }
 
 #[cfg(test)]
@@ -236,6 +277,7 @@ mod tests {
                 money: vec![PlayerBagMoney { money_type: PlayerBagMoneyType::Gold as i32, money_count: 100 }],
             }),
             player_skill: None,
+            player_equip: None,
         })
     }
 
@@ -283,5 +325,59 @@ mod tests {
         assert_eq!(p.gold(), 0);
         assert_eq!(p.add_gold(10), 10);
         assert_eq!(p.add_item(1, 1), 1);
+    }
+
+    #[test]
+    fn test_buy_equip_success() {
+        let mut p = test_player();
+        p.add_gold(500); // 100 + 500 = 600
+        let (id, level) = p.buy_equip(1001).unwrap();
+        assert_eq!(id, 1001);
+        assert_eq!(level, 1);
+        assert_eq!(p.gold(), 100);
+        assert_eq!(p.equip_level(1001), Some(1));
+    }
+
+    #[test]
+    fn test_buy_equip_already_owned() {
+        let mut p = test_player();
+        p.add_gold(500);
+        p.buy_equip(1001).unwrap();
+        p.add_gold(500);
+        assert!(p.buy_equip(1001).is_err());
+    }
+
+    #[test]
+    fn test_buy_equip_insufficient_gold() {
+        let mut p = test_player();
+        assert!(p.buy_equip(1001).is_err()); // 100 < 500
+    }
+
+    #[test]
+    fn test_upgrade_equip_success() {
+        let mut p = test_player();
+        p.add_gold(600); // 100 + 600 = 700, enough for buy(500) + upgrade(100)
+        p.buy_equip(1001).unwrap();
+        let (id, level) = p.upgrade_equip(1001).unwrap();
+        assert_eq!(id, 1001);
+        assert_eq!(level, 2);
+        assert_eq!(p.gold(), 100);
+    }
+
+    #[test]
+    fn test_upgrade_equip_not_owned() {
+        let mut p = test_player();
+        assert!(p.upgrade_equip(999).is_err());
+    }
+
+    #[test]
+    fn test_upgrade_equip_insufficient_gold() {
+        let mut p = test_player();
+        p.add_gold(500); // 600 total, buy costs 500, leaves 100
+        p.buy_equip(1001).unwrap();
+        // gold = 100, upgrade costs 100 exactly, but then next upgrade fails
+        assert!(p.upgrade_equip(1001).is_ok()); // 100 - 100 = 0
+        p.add_gold(50); // 50 < 100
+        assert!(p.upgrade_equip(1001).is_err());
     }
 }

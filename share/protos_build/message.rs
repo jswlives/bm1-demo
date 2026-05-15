@@ -8,7 +8,10 @@ pub struct CsRpcMsg {
     pub seq: u32,
     #[prost(uint32, tag = "3")]
     pub session_id: u32,
-    #[prost(oneof = "cs_rpc_msg::Payload", tags = "14, 15, 16, 17, 18, 19, 20, 21, 22")]
+    #[prost(
+        oneof = "cs_rpc_msg::Payload",
+        tags = "14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26"
+    )]
     pub payload: ::core::option::Option<cs_rpc_msg::Payload>,
 }
 /// Nested message and enum types in `CSRpcMsg`.
@@ -34,6 +37,14 @@ pub mod cs_rpc_msg {
         SkillUpgradeReq(super::SkillUpgradeReq),
         #[prost(message, tag = "22")]
         SkillUpgradeResp(super::SkillUpgradeResp),
+        #[prost(message, tag = "23")]
+        BuyEquipReq(super::BuyEquipReq),
+        #[prost(message, tag = "24")]
+        BuyEquipResp(super::BuyEquipResp),
+        #[prost(message, tag = "25")]
+        UpgradeEquipReq(super::UpgradeEquipReq),
+        #[prost(message, tag = "26")]
+        UpgradeEquipResp(super::UpgradeEquipResp),
     }
 }
 #[allow(non_camel_case_types)]
@@ -115,6 +126,42 @@ pub struct SkillUpgradeResp {
     pub remaining_skill_points: u32,
 }
 #[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct BuyEquipReq {
+    #[prost(uint32, tag = "1")]
+    pub equip_id: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BuyEquipResp {
+    #[prost(int32, tag = "1")]
+    pub result: i32,
+    #[prost(string, tag = "2")]
+    pub error_msg: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "3")]
+    pub equip_id: u32,
+    #[prost(uint32, tag = "4")]
+    pub equip_level: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct UpgradeEquipReq {
+    #[prost(uint32, tag = "1")]
+    pub equip_id: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UpgradeEquipResp {
+    #[prost(int32, tag = "1")]
+    pub result: i32,
+    #[prost(string, tag = "2")]
+    pub error_msg: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "3")]
+    pub equip_id: u32,
+    #[prost(uint32, tag = "4")]
+    pub equip_level: u32,
+}
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum CsRpcCmd {
@@ -128,6 +175,10 @@ pub enum CsRpcCmd {
     SkillUnlockResp = 9,
     SkillUpgradeReq = 10,
     SkillUpgradeResp = 11,
+    BuyEquipReq = 12,
+    BuyEquipResp = 13,
+    UpgradeEquipReq = 14,
+    UpgradeEquipResp = 15,
 }
 impl CsRpcCmd {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -146,6 +197,10 @@ impl CsRpcCmd {
             Self::SkillUnlockResp => "CS_RPC_CMD_SKILL_UNLOCK_RESP",
             Self::SkillUpgradeReq => "CS_RPC_CMD_SKILL_UPGRADE_REQ",
             Self::SkillUpgradeResp => "CS_RPC_CMD_SKILL_UPGRADE_RESP",
+            Self::BuyEquipReq => "CS_RPC_CMD_BUY_EQUIP_REQ",
+            Self::BuyEquipResp => "CS_RPC_CMD_BUY_EQUIP_RESP",
+            Self::UpgradeEquipReq => "CS_RPC_CMD_UPGRADE_EQUIP_REQ",
+            Self::UpgradeEquipResp => "CS_RPC_CMD_UPGRADE_EQUIP_RESP",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -161,6 +216,10 @@ impl CsRpcCmd {
             "CS_RPC_CMD_SKILL_UNLOCK_RESP" => Some(Self::SkillUnlockResp),
             "CS_RPC_CMD_SKILL_UPGRADE_REQ" => Some(Self::SkillUpgradeReq),
             "CS_RPC_CMD_SKILL_UPGRADE_RESP" => Some(Self::SkillUpgradeResp),
+            "CS_RPC_CMD_BUY_EQUIP_REQ" => Some(Self::BuyEquipReq),
+            "CS_RPC_CMD_BUY_EQUIP_RESP" => Some(Self::BuyEquipResp),
+            "CS_RPC_CMD_UPGRADE_EQUIP_REQ" => Some(Self::UpgradeEquipReq),
+            "CS_RPC_CMD_UPGRADE_EQUIP_RESP" => Some(Self::UpgradeEquipResp),
             _ => None,
         }
     }

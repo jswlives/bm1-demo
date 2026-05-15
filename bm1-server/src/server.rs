@@ -8,7 +8,7 @@ use bm1_proto::message::PlayerDataNotify;
 use bm1_proto::message::{CsRpcCmd, CsRpcMsg};
 
 use crate::codec;
-use crate::handler::{AddMoneyHandler, LoginHandler, SkillUnlockHandler, SkillUpgradeHandler};
+use crate::handler::{AddMoneyHandler, BuyEquipHandler, LoginHandler, SkillUnlockHandler, SkillUpgradeHandler, UpgradeEquipHandler};
 use crate::router::{Context, Router};
 use crate::session::SessionManager;
 
@@ -47,6 +47,8 @@ impl Server {
         router.register(CsRpcCmd::AddMoneyReq as i32, Box::new(AddMoneyHandler));
         router.register(CsRpcCmd::SkillUnlockReq as i32, Box::new(SkillUnlockHandler));
         router.register(CsRpcCmd::SkillUpgradeReq as i32, Box::new(SkillUpgradeHandler));
+        router.register(CsRpcCmd::BuyEquipReq as i32, Box::new(BuyEquipHandler));
+        router.register(CsRpcCmd::UpgradeEquipReq as i32, Box::new(UpgradeEquipHandler));
         router
     }
 }

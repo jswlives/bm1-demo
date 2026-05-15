@@ -1,14 +1,14 @@
 use bm1_proto::message::cs_rpc_msg::Payload;
-use bm1_proto::message::{CsRpcCmd, CsRpcMsg, SkillUpgradeResp};
+use bm1_proto::message::{CsRpcCmd, CsRpcMsg, UpgradeEquipResp};
 use crate::model::player_pool::PlayerPool;
 use crate::router::{Context, MessageHandler};
 
-pub struct SkillUpgradeHandler;
+pub struct UpgradeEquipHandler;
 
-impl MessageHandler for SkillUpgradeHandler {
+impl MessageHandler for UpgradeEquipHandler {
     fn handle(&self, ctx: &Context, msg: CsRpcMsg) -> Option<CsRpcMsg> {
         let req = match &msg.payload {
-            Some(Payload::SkillUpgradeReq(r)) => r,
+            Some(Payload::UpgradeEquipReq(r)) => r,
             _ => return None,
         };
 
@@ -22,19 +22,17 @@ impl MessageHandler for SkillUpgradeHandler {
             None => return Some(Self::err_resp(&msg, ctx, "player not found")),
         };
 
-        match player.upgrade_skill(req.skill_id) {
-            Ok((skill_id, skill_level)) => {
-                let remaining = player.skill_points();
+        match player.upgrade_equip(req.equip_id) {
+            Ok((equip_id, equip_level)) => {
                 Some(CsRpcMsg {
-                    cmd: CsRpcCmd::SkillUpgradeResp as i32,
+                    cmd: CsRpcCmd::UpgradeEquipResp as i32,
                     seq: msg.seq,
                     session_id: ctx.session_id,
-                    payload: Some(Payload::SkillUpgradeResp(SkillUpgradeResp {
+                    payload: Some(Payload::UpgradeEquipResp(UpgradeEquipResp {
                         result: 1,
                         error_msg: String::new(),
-                        skill_id,
-                        skill_level,
-                        remaining_skill_points: remaining,
+                        equip_id,
+                        equip_level,
                     })),
                 })
             }
@@ -43,13 +41,13 @@ impl MessageHandler for SkillUpgradeHandler {
     }
 }
 
-impl SkillUpgradeHandler {
+impl UpgradeEquipHandler {
     fn err_resp(msg: &CsRpcMsg, ctx: &Context, err: &str) -> CsRpcMsg {
         CsRpcMsg {
-            cmd: CsRpcCmd::SkillUpgradeResp as i32,
+            cmd: CsRpcCmd::UpgradeEquipResp as i32,
             seq: msg.seq,
             session_id: ctx.session_id,
-            payload: Some(Payload::SkillUpgradeResp(SkillUpgradeResp {
+            payload: Some(Payload::UpgradeEquipResp(UpgradeEquipResp {
                 result: 0,
                 error_msg: err.to_string(),
                 ..Default::default()
@@ -61,52 +59,57 @@ impl SkillUpgradeHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bm1_proto::message::SkillUpgradeReq;
-    use bm1_proto::model::PlayerData;
+    use bm1_proto::message::UpgradeEquipReq;
+    use bm1_proto::model::{PlayerBag, PlayerBagMoney, PlayerBagMoneyType, PlayerBase, PlayerData, PlayerEquip, PlayerEquipData};
     use crate::router::Context;
 
-    fn make_req(skill_id: u32) -> CsRpcMsg {
+    fn make_req(equip_id: u32) -> CsRpcMsg {
         CsRpcMsg {
-            cmd: CsRpcCmd::SkillUpgradeReq as i32,
+            cmd: CsRpcCmd::UpgradeEquipReq as i32,
             seq: 1,
             session_id: 0,
-            payload: Some(Payload::SkillUpgradeReq(SkillUpgradeReq { skill_id })),
+            payload: Some(Payload::UpgradeEquipReq(UpgradeEquipReq { equip_id })),
         }
     }
 
     fn logged_in_ctx() -> Context {
-        Context { player_id: 103, session_id: 100 }
+        Context { player_id: 202, session_id: 100 }
     }
 
     fn not_logged_in_ctx() -> Context {
         Context { player_id: 0, session_id: 0 }
     }
 
-    fn setup_player_with_skill() {
+    fn setup_player_with_equip() {
         let mut pool = PlayerPool::global().write().unwrap();
         pool.load(PlayerData {
-            player_base: Some(bm1_proto::model::PlayerBase {
-                player_id: 103,
+            player_base: Some(PlayerBase {
+                player_id: 202,
                 player_name: "test".into(),
                 player_level: 1,
             }),
-            player_bag: None,
-            player_skill: Some(bm1_proto::model::PlayerSkillData {
-                skill_points: 5,
-                skills: vec![bm1_proto::model::PlayerSkill { skill_id: 100, skill_level: 1 }],
+            player_bag: Some(PlayerBag {
+                items: vec![],
+                money: vec![PlayerBagMoney {
+                    money_type: PlayerBagMoneyType::Gold as i32,
+                    money_count: 500,
+                }],
             }),
-            player_equip: None,
+            player_skill: None,
+            player_equip: Some(PlayerEquipData {
+                equips: vec![PlayerEquip { equip_id: 1001, equip_level: 1 }],
+            }),
         });
     }
 
     #[test]
     fn test_not_logged_in() {
-        let handler = SkillUpgradeHandler;
-        let msg = make_req(100);
+        let handler = UpgradeEquipHandler;
+        let msg = make_req(1001);
         let resp = handler.handle(&not_logged_in_ctx(), msg).unwrap();
-        assert_eq!(resp.cmd, CsRpcCmd::SkillUpgradeResp as i32);
+        assert_eq!(resp.cmd, CsRpcCmd::UpgradeEquipResp as i32);
         match resp.payload {
-            Some(Payload::SkillUpgradeResp(r)) => {
+            Some(Payload::UpgradeEquipResp(r)) => {
                 assert_eq!(r.result, 0);
                 assert!(!r.error_msg.is_empty());
             }
@@ -116,46 +119,46 @@ mod tests {
 
     #[test]
     fn test_upgrade_success() {
-        setup_player_with_skill();
-        let handler = SkillUpgradeHandler;
-        let msg = make_req(100);
+        setup_player_with_equip();
+        let handler = UpgradeEquipHandler;
+        let msg = make_req(1001);
         let resp = handler.handle(&logged_in_ctx(), msg).unwrap();
         match resp.payload {
-            Some(Payload::SkillUpgradeResp(r)) => {
+            Some(Payload::UpgradeEquipResp(r)) => {
                 assert_eq!(r.result, 1);
-                assert_eq!(r.skill_id, 100);
-                assert_eq!(r.skill_level, 2);
+                assert_eq!(r.equip_id, 1001);
+                assert_eq!(r.equip_level, 2);
             }
             _ => panic!("unexpected payload"),
         }
     }
 
     #[test]
-    fn test_upgrade_not_unlocked() {
-        setup_player_with_skill();
-        let handler = SkillUpgradeHandler;
-        let msg = make_req(999);
+    fn test_upgrade_not_owned() {
+        setup_player_with_equip();
+        let handler = UpgradeEquipHandler;
+        let msg = make_req(9999);
         let resp = handler.handle(&logged_in_ctx(), msg).unwrap();
         match resp.payload {
-            Some(Payload::SkillUpgradeResp(r)) => {
+            Some(Payload::UpgradeEquipResp(r)) => {
                 assert_eq!(r.result, 0);
-                assert!(r.error_msg.contains("not unlocked"));
+                assert!(r.error_msg.contains("not owned"));
             }
             _ => panic!("unexpected payload"),
         }
     }
 
     #[test]
-    fn test_upgrade_insufficient_points() {
-        setup_player_with_skill();
-        // Exhaust skill points by upgrading multiple times
-        let handler = SkillUpgradeHandler;
-        for _ in 0..10 {
-            let _ = handler.handle(&logged_in_ctx(), make_req(100));
+    fn test_upgrade_insufficient_gold() {
+        setup_player_with_equip();
+        let handler = UpgradeEquipHandler;
+        // Drain gold by upgrading multiple times
+        for _ in 0..6 {
+            let _ = handler.handle(&logged_in_ctx(), make_req(1001));
         }
-        let resp = handler.handle(&logged_in_ctx(), make_req(100)).unwrap();
+        let resp = handler.handle(&logged_in_ctx(), make_req(1001)).unwrap();
         match resp.payload {
-            Some(Payload::SkillUpgradeResp(r)) => {
+            Some(Payload::UpgradeEquipResp(r)) => {
                 assert_eq!(r.result, 0);
                 assert!(r.error_msg.contains("insufficient"));
             }

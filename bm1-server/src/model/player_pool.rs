@@ -26,6 +26,7 @@ static PLAYER_POOL: LazyLock<RwLock<PlayerPool>> = LazyLock::new(|| {
             }],
         }),
         player_skill: None,
+        player_equip: None,
     });
     pool.load(PlayerData {
         player_base: Some(PlayerBase {
@@ -50,6 +51,7 @@ static PLAYER_POOL: LazyLock<RwLock<PlayerPool>> = LazyLock::new(|| {
             ],
         }),
         player_skill: None,
+        player_equip: None,
     });
     RwLock::new(pool)
 });
@@ -121,6 +123,7 @@ mod tests {
             }),
             player_bag: Some(PlayerBag::default()),
             player_skill: None,
+            player_equip: None,
         }
     }
 
@@ -175,6 +178,7 @@ mod tests {
                 }],
             }),
             player_skill: None,
+            player_equip: None,
         });
         pool.get_mut(104).unwrap().add_gold(100);
         assert_eq!(pool.get(104).unwrap().gold(), 1100);

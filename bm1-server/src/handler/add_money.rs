@@ -108,6 +108,7 @@ mod tests {
                 }],
             }),
             player_skill: None,
+            player_equip: None,
         });
     }
 

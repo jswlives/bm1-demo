@@ -17,6 +17,10 @@ message CSRpcMsg {
     SkillUnlockResp skill_unlock_resp = 20;
     SkillUpgradeReq skill_upgrade_req = 21;
     SkillUpgradeResp skill_upgrade_resp = 22;
+    BuyEquipReq buy_equip_req = 23;
+    BuyEquipResp buy_equip_resp = 24;
+    UpgradeEquipReq upgrade_equip_req = 25;
+    UpgradeEquipResp upgrade_equip_resp = 26;
   }
 }
 
@@ -31,6 +35,10 @@ enum CSRpcCmd {
   CS_RPC_CMD_SKILL_UNLOCK_RESP = 9;
   CS_RPC_CMD_SKILL_UPGRADE_REQ = 10;
   CS_RPC_CMD_SKILL_UPGRADE_RESP = 11;
+  CS_RPC_CMD_BUY_EQUIP_REQ = 12;
+  CS_RPC_CMD_BUY_EQUIP_RESP = 13;
+  CS_RPC_CMD_UPGRADE_EQUIP_REQ = 14;
+  CS_RPC_CMD_UPGRADE_EQUIP_RESP = 15;
 }
 
 message LoginReq {
@@ -79,4 +87,26 @@ message SkillUpgradeResp {
   uint32 skill_id = 3;
   uint32 skill_level = 4;
   uint32 remaining_skill_points = 5;
+}
+
+message BuyEquipReq {
+  uint32 equip_id = 1;
+}
+
+message BuyEquipResp {
+  int32 result = 1;
+  string error_msg = 2;
+  uint32 equip_id = 3;
+  uint32 equip_level = 4;
+}
+
+message UpgradeEquipReq {
+  uint32 equip_id = 1;
+}
+
+message UpgradeEquipResp {
+  int32 result = 1;
+  string error_msg = 2;
+  uint32 equip_id = 3;
+  uint32 equip_level = 4;
 }

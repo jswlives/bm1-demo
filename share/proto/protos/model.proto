@@ -40,10 +40,20 @@ message PlayerSkillData {
     repeated PlayerSkill skills = 2;
 }
 
+message PlayerEquip {
+    uint32 equip_id = 1;
+    uint32 equip_level = 2;
+}
+
+message PlayerEquipData {
+    repeated PlayerEquip equips = 1;
+}
+
 message PlayerData {
     PlayerBase player_base = 1;
     PlayerBag player_bag = 2;
     PlayerSkillData player_skill = 3;
+    PlayerEquipData player_equip = 4;
 }
 
 enum DeltaOp {
@@ -83,8 +93,19 @@ message PlayerSkillDataDelta {
   repeated PlayerSkillDelta skill_changes = 2;
 }
 
+message PlayerEquipDelta {
+  DeltaOp op = 1;
+  uint32 equip_id = 2;
+  uint32 equip_level = 3;
+}
+
+message PlayerEquipDataDelta {
+  repeated PlayerEquipDelta equip_changes = 1;
+}
+
 message PlayerDataDelta {
   optional PlayerBaseDelta base = 1;
   optional PlayerBagDelta bag = 2;
   optional PlayerSkillDataDelta skill = 3;
+  optional PlayerEquipDataDelta equip = 4;
 }

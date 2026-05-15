@@ -1,18 +1,20 @@
 use bm1_proto::model::{
     DeltaOp, PlayerBagDelta, PlayerBagItemDelta, PlayerBagMoneyDelta,
-    PlayerBaseDelta, PlayerData, PlayerDataDelta, PlayerSkillDataDelta, PlayerSkillDelta,
+    PlayerBaseDelta, PlayerData, PlayerDataDelta, PlayerEquipDataDelta, PlayerEquipDelta,
+    PlayerSkillDataDelta, PlayerSkillDelta,
 };
 
 pub fn diff_player_data(before: &PlayerData, after: &PlayerData) -> Option<PlayerDataDelta> {
     let base = diff_base(before, after);
     let bag = diff_bag(before, after);
     let skill = diff_skill(before, after);
+    let equip = diff_equip(before, after);
 
-    if base.is_none() && bag.is_none() && skill.is_none() {
+    if base.is_none() && bag.is_none() && skill.is_none() && equip.is_none() {
         return None;
     }
 
-    Some(PlayerDataDelta { base, bag, skill })
+    Some(PlayerDataDelta { base, bag, skill, equip })
 }
 
 // Only diffs player_level; player_id and player_name are immutable at runtime.
@@ -174,6 +176,48 @@ fn diff_skill(before: &PlayerData, after: &PlayerData) -> Option<PlayerSkillData
 
 static EMPTY_SKILLS: Vec<bm1_proto::model::PlayerSkill> = Vec::new();
 
+fn diff_equip(before: &PlayerData, after: &PlayerData) -> Option<PlayerEquipDataDelta> {
+    let before_equips = before.player_equip.as_ref().map(|e| &e.equips).unwrap_or(&EMPTY_EQUIPS);
+    let after_equips = after.player_equip.as_ref().map(|e| &e.equips).unwrap_or(&EMPTY_EQUIPS);
+
+    let mut equip_changes = Vec::new();
+
+    for ae in after_equips {
+        let before_level = before_equips
+            .iter()
+            .find(|e| e.equip_id == ae.equip_id)
+            .map(|e| e.equip_level)
+            .unwrap_or(0);
+
+        if ae.equip_level != before_level {
+            equip_changes.push(PlayerEquipDelta {
+                op: DeltaOp::Upsert as i32,
+                equip_id: ae.equip_id,
+                equip_level: ae.equip_level,
+            });
+        }
+    }
+
+    for be in before_equips {
+        let exists_in_after = after_equips.iter().any(|e| e.equip_id == be.equip_id);
+        if !exists_in_after {
+            equip_changes.push(PlayerEquipDelta {
+                op: DeltaOp::Delete as i32,
+                equip_id: be.equip_id,
+                equip_level: 0,
+            });
+        }
+    }
+
+    if equip_changes.is_empty() {
+        return None;
+    }
+
+    Some(PlayerEquipDataDelta { equip_changes })
+}
+
+static EMPTY_EQUIPS: Vec<bm1_proto::model::PlayerEquip> = Vec::new();
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -194,6 +238,7 @@ mod tests {
                 ],
             }),
             player_skill: None,
+            player_equip: None,
         }
     }
 

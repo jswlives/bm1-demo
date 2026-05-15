@@ -49,8 +49,12 @@ Client TCP → Server accept → spawn task per connection
 | SkillUnlockResp | 9 | — |
 | SkillUpgradeReq | 10 | SkillUpgradeHandler |
 | SkillUpgradeResp | 11 | — |
+| BuyEquipReq | 12 | BuyEquipHandler |
+| BuyEquipResp | 13 | — |
+| UpgradeEquipReq | 14 | UpgradeEquipHandler |
+| UpgradeEquipResp | 15 | — |
 
-Next available cmd: **12**. Next available oneof field number: **23**.
+Next available cmd: **16**. Next available oneof field number: **27**.
 
 ### Adding a New Command
 

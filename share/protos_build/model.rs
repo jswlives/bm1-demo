@@ -50,6 +50,20 @@ pub struct PlayerSkillData {
     pub skills: ::prost::alloc::vec::Vec<PlayerSkill>,
 }
 #[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PlayerEquip {
+    #[prost(uint32, tag = "1")]
+    pub equip_id: u32,
+    #[prost(uint32, tag = "2")]
+    pub equip_level: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PlayerEquipData {
+    #[prost(message, repeated, tag = "1")]
+    pub equips: ::prost::alloc::vec::Vec<PlayerEquip>,
+}
+#[allow(non_camel_case_types)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlayerData {
     #[prost(message, optional, tag = "1")]
@@ -58,6 +72,8 @@ pub struct PlayerData {
     pub player_bag: ::core::option::Option<PlayerBag>,
     #[prost(message, optional, tag = "3")]
     pub player_skill: ::core::option::Option<PlayerSkillData>,
+    #[prost(message, optional, tag = "4")]
+    pub player_equip: ::core::option::Option<PlayerEquipData>,
 }
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -110,6 +126,22 @@ pub struct PlayerSkillDataDelta {
     pub skill_changes: ::prost::alloc::vec::Vec<PlayerSkillDelta>,
 }
 #[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PlayerEquipDelta {
+    #[prost(enumeration = "DeltaOp", tag = "1")]
+    pub op: i32,
+    #[prost(uint32, tag = "2")]
+    pub equip_id: u32,
+    #[prost(uint32, tag = "3")]
+    pub equip_level: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PlayerEquipDataDelta {
+    #[prost(message, repeated, tag = "1")]
+    pub equip_changes: ::prost::alloc::vec::Vec<PlayerEquipDelta>,
+}
+#[allow(non_camel_case_types)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlayerDataDelta {
     #[prost(message, optional, tag = "1")]
@@ -118,6 +150,8 @@ pub struct PlayerDataDelta {
     pub bag: ::core::option::Option<PlayerBagDelta>,
     #[prost(message, optional, tag = "3")]
     pub skill: ::core::option::Option<PlayerSkillDataDelta>,
+    #[prost(message, optional, tag = "4")]
+    pub equip: ::core::option::Option<PlayerEquipDataDelta>,
 }
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

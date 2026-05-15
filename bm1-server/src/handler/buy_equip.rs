@@ -1,14 +1,14 @@
 use bm1_proto::message::cs_rpc_msg::Payload;
-use bm1_proto::message::{CsRpcCmd, CsRpcMsg, SkillUnlockResp};
+use bm1_proto::message::{BuyEquipResp, CsRpcCmd, CsRpcMsg};
 use crate::model::player_pool::PlayerPool;
 use crate::router::{Context, MessageHandler};
 
-pub struct SkillUnlockHandler;
+pub struct BuyEquipHandler;
 
-impl MessageHandler for SkillUnlockHandler {
+impl MessageHandler for BuyEquipHandler {
     fn handle(&self, ctx: &Context, msg: CsRpcMsg) -> Option<CsRpcMsg> {
         let req = match &msg.payload {
-            Some(Payload::SkillUnlockReq(r)) => r,
+            Some(Payload::BuyEquipReq(r)) => r,
             _ => return None,
         };
 
@@ -22,19 +22,17 @@ impl MessageHandler for SkillUnlockHandler {
             None => return Some(Self::err_resp(&msg, ctx, "player not found")),
         };
 
-        match player.unlock_skill(req.skill_id) {
-            Ok((skill_id, skill_level)) => {
-                let remaining = player.skill_points();
+        match player.buy_equip(req.equip_id) {
+            Ok((equip_id, equip_level)) => {
                 Some(CsRpcMsg {
-                    cmd: CsRpcCmd::SkillUnlockResp as i32,
+                    cmd: CsRpcCmd::BuyEquipResp as i32,
                     seq: msg.seq,
                     session_id: ctx.session_id,
-                    payload: Some(Payload::SkillUnlockResp(SkillUnlockResp {
+                    payload: Some(Payload::BuyEquipResp(BuyEquipResp {
                         result: 1,
                         error_msg: String::new(),
-                        skill_id,
-                        skill_level,
-                        remaining_skill_points: remaining,
+                        equip_id,
+                        equip_level,
                     })),
                 })
             }
@@ -43,13 +41,13 @@ impl MessageHandler for SkillUnlockHandler {
     }
 }
 
-impl SkillUnlockHandler {
+impl BuyEquipHandler {
     fn err_resp(msg: &CsRpcMsg, ctx: &Context, err: &str) -> CsRpcMsg {
         CsRpcMsg {
-            cmd: CsRpcCmd::SkillUnlockResp as i32,
+            cmd: CsRpcCmd::BuyEquipResp as i32,
             seq: msg.seq,
             session_id: ctx.session_id,
-            payload: Some(Payload::SkillUnlockResp(SkillUnlockResp {
+            payload: Some(Payload::BuyEquipResp(BuyEquipResp {
                 result: 0,
                 error_msg: err.to_string(),
                 ..Default::default()
@@ -61,52 +59,55 @@ impl SkillUnlockHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bm1_proto::message::SkillUnlockReq;
-    use bm1_proto::model::PlayerData;
+    use bm1_proto::message::BuyEquipReq;
+    use bm1_proto::model::{PlayerBag, PlayerBagMoney, PlayerBagMoneyType, PlayerBase, PlayerData};
     use crate::router::Context;
 
-    fn make_req(skill_id: u32) -> CsRpcMsg {
+    fn make_req(equip_id: u32) -> CsRpcMsg {
         CsRpcMsg {
-            cmd: CsRpcCmd::SkillUnlockReq as i32,
+            cmd: CsRpcCmd::BuyEquipReq as i32,
             seq: 1,
             session_id: 0,
-            payload: Some(Payload::SkillUnlockReq(SkillUnlockReq { skill_id })),
+            payload: Some(Payload::BuyEquipReq(BuyEquipReq { equip_id })),
         }
     }
 
     fn logged_in_ctx() -> Context {
-        Context { player_id: 102, session_id: 100 }
+        Context { player_id: 201, session_id: 100 }
     }
 
     fn not_logged_in_ctx() -> Context {
         Context { player_id: 0, session_id: 0 }
     }
 
-    fn setup_player_with_points(points: u32) {
+    fn setup_player(gold: u32) {
         let mut pool = PlayerPool::global().write().unwrap();
         pool.load(PlayerData {
-            player_base: Some(bm1_proto::model::PlayerBase {
-                player_id: 102,
+            player_base: Some(PlayerBase {
+                player_id: 201,
                 player_name: "test".into(),
                 player_level: 1,
             }),
-            player_bag: None,
-            player_skill: Some(bm1_proto::model::PlayerSkillData {
-                skill_points: points,
-                skills: vec![],
+            player_bag: Some(PlayerBag {
+                items: vec![],
+                money: vec![PlayerBagMoney {
+                    money_type: PlayerBagMoneyType::Gold as i32,
+                    money_count: gold,
+                }],
             }),
+            player_skill: None,
             player_equip: None,
         });
     }
 
     #[test]
     fn test_not_logged_in() {
-        let handler = SkillUnlockHandler;
-        let msg = make_req(1);
+        let handler = BuyEquipHandler;
+        let msg = make_req(1001);
         let resp = handler.handle(&not_logged_in_ctx(), msg).unwrap();
-        assert_eq!(resp.cmd, CsRpcCmd::SkillUnlockResp as i32);
+        assert_eq!(resp.cmd, CsRpcCmd::BuyEquipResp as i32);
         match resp.payload {
-            Some(Payload::SkillUnlockResp(r)) => {
+            Some(Payload::BuyEquipResp(r)) => {
                 assert_eq!(r.result, 0);
                 assert!(!r.error_msg.is_empty());
             }
@@ -115,45 +116,44 @@ mod tests {
     }
 
     #[test]
-    fn test_unlock_success() {
-        setup_player_with_points(5);
-        let handler = SkillUnlockHandler;
-        let msg = make_req(100);
+    fn test_buy_success() {
+        setup_player(1000);
+        let handler = BuyEquipHandler;
+        let msg = make_req(1001);
         let resp = handler.handle(&logged_in_ctx(), msg).unwrap();
         match resp.payload {
-            Some(Payload::SkillUnlockResp(r)) => {
+            Some(Payload::BuyEquipResp(r)) => {
                 assert_eq!(r.result, 1);
-                assert_eq!(r.skill_id, 100);
-                assert_eq!(r.skill_level, 1);
-                assert_eq!(r.remaining_skill_points, 4);
+                assert_eq!(r.equip_id, 1001);
+                assert_eq!(r.equip_level, 1);
             }
             _ => panic!("unexpected payload"),
         }
     }
 
     #[test]
-    fn test_unlock_duplicate() {
-        setup_player_with_points(5);
-        let handler = SkillUnlockHandler;
-        let _ = handler.handle(&logged_in_ctx(), make_req(200));
-        let resp = handler.handle(&logged_in_ctx(), make_req(200)).unwrap();
+    fn test_buy_already_owned() {
+        setup_player(2000);
+        let handler = BuyEquipHandler;
+        let _ = handler.handle(&logged_in_ctx(), make_req(1001));
+        let resp = handler.handle(&logged_in_ctx(), make_req(1001)).unwrap();
         match resp.payload {
-            Some(Payload::SkillUnlockResp(r)) => {
+            Some(Payload::BuyEquipResp(r)) => {
                 assert_eq!(r.result, 0);
-                assert!(r.error_msg.contains("already unlocked"));
+                assert!(r.error_msg.contains("already owned"));
             }
             _ => panic!("unexpected payload"),
         }
     }
 
     #[test]
-    fn test_unlock_insufficient_points() {
-        setup_player_with_points(0);
-        let handler = SkillUnlockHandler;
-        let msg = make_req(300);
+    fn test_buy_insufficient_gold() {
+        setup_player(100);
+        let handler = BuyEquipHandler;
+        let msg = make_req(1001);
         let resp = handler.handle(&logged_in_ctx(), msg).unwrap();
         match resp.payload {
-            Some(Payload::SkillUnlockResp(r)) => {
+            Some(Payload::BuyEquipResp(r)) => {
                 assert_eq!(r.result, 0);
                 assert!(r.error_msg.contains("insufficient"));
             }
