@@ -4,6 +4,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
 
 use bm1_proto::message::cs_rpc_msg::Payload;
+use bm1_proto::message::PlayerDataNotify;
 use bm1_proto::message::{CsRpcCmd, CsRpcMsg};
 
 use crate::codec;
@@ -91,6 +92,15 @@ async fn handle_connection(
                 };
 
                 let ctx = Context { session_id, player_id };
+
+                // Snapshot player data before handler (if player is logged in)
+                let before = if player_id > 0 {
+                    let pool = crate::model::player_pool::PlayerPool::global().read().unwrap();
+                    pool.get(player_id).map(|p| p.data().clone())
+                } else {
+                    None
+                };
+
                 if let Some(mut resp) = router.dispatch(&ctx, msg) {
                     // Bind player_id to session after successful login
                     if login_player_id.is_some() && player_id == 0 {
@@ -100,6 +110,31 @@ async fn handle_connection(
                             }
                         }
                     }
+
+                    // Snapshot diff: send PlayerDataNotify BEFORE Resp
+                    if let Some(before_data) = before {
+                        let after_data = {
+                            let pool = crate::model::player_pool::PlayerPool::global().read().unwrap();
+                            pool.get(player_id).map(|p| p.data().clone())
+                        };
+                        if let Some(after_data) = after_data {
+                            if let Some(delta) = crate::model::delta::diff_player_data(&before_data, &after_data) {
+                                let notify = CsRpcMsg {
+                                    cmd: CsRpcCmd::PlayerDataNotify as i32,
+                                    seq: 0,
+                                    session_id,
+                                    payload: Some(Payload::PlayerDataNotify(
+                                        PlayerDataNotify {
+                                            delta: Some(delta),
+                                            reason: String::new(),
+                                        },
+                                    )),
+                                };
+                                let _ = write_tx.send(notify).await;
+                            }
+                        }
+                    }
+
                     resp.session_id = session_id;
                     let _ = write_tx.send(resp).await;
                 }
