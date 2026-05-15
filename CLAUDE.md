@@ -44,8 +44,9 @@ Client TCP → Server accept → spawn task per connection
 | LoginResp | 4 | — |
 | AddMoneyReq | 5 | AddMoneyHandler |
 | AddMoneyResp | 6 | — |
+| PlayerDataNotify | 7 | (server-push, no handler) |
 
-Next available oneof field number: **18**.
+Next available cmd: **8**. Next available oneof field number: **19**.
 
 ### Adding a New Command
 
