@@ -42,6 +42,46 @@ pub struct PlayerData {
     pub player_bag: ::core::option::Option<PlayerBag>,
 }
 #[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PlayerBaseDelta {
+    #[prost(uint32, optional, tag = "1")]
+    pub player_level: ::core::option::Option<u32>,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PlayerBagMoneyDelta {
+    #[prost(enumeration = "PlayerBagMoneyType", tag = "1")]
+    pub money_type: i32,
+    #[prost(uint32, tag = "2")]
+    pub money_count: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PlayerBagItemDelta {
+    #[prost(enumeration = "DeltaOp", tag = "1")]
+    pub op: i32,
+    #[prost(uint32, tag = "2")]
+    pub item_id: u32,
+    #[prost(uint32, tag = "3")]
+    pub item_count: u32,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PlayerBagDelta {
+    #[prost(message, repeated, tag = "1")]
+    pub money_changes: ::prost::alloc::vec::Vec<PlayerBagMoneyDelta>,
+    #[prost(message, repeated, tag = "2")]
+    pub item_changes: ::prost::alloc::vec::Vec<PlayerBagItemDelta>,
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PlayerDataDelta {
+    #[prost(message, optional, tag = "1")]
+    pub base: ::core::option::Option<PlayerBaseDelta>,
+    #[prost(message, optional, tag = "2")]
+    pub bag: ::core::option::Option<PlayerBagDelta>,
+}
+#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum PlayerBagMoneyType {
@@ -67,6 +107,36 @@ impl PlayerBagMoneyType {
             "PLAYER_BAG_MONEY_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
             "PLAYER_BAG_MONEY_TYPE_GOLD" => Some(Self::Gold),
             "PLAYER_BAG_MONEY_TYPE_DIAMOND" => Some(Self::Diamond),
+            _ => None,
+        }
+    }
+}
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum DeltaOp {
+    Unspecified = 0,
+    Upsert = 1,
+    Delete = 2,
+}
+impl DeltaOp {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "DELTA_OP_UNSPECIFIED",
+            Self::Upsert => "DELTA_OP_UPSERT",
+            Self::Delete => "DELTA_OP_DELETE",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "DELTA_OP_UNSPECIFIED" => Some(Self::Unspecified),
+            "DELTA_OP_UPSERT" => Some(Self::Upsert),
+            "DELTA_OP_DELETE" => Some(Self::Delete),
             _ => None,
         }
     }

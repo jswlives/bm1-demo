@@ -34,3 +34,34 @@ message PlayerData {
     PlayerBase player_base = 1;
     PlayerBag player_bag = 2;
 }
+
+enum DeltaOp {
+  DELTA_OP_UNSPECIFIED = 0;
+  DELTA_OP_UPSERT = 1;
+  DELTA_OP_DELETE = 2;
+}
+
+message PlayerBaseDelta {
+  optional uint32 player_level = 1;
+}
+
+message PlayerBagMoneyDelta {
+  PlayerBagMoneyType money_type = 1;
+  uint32 money_count = 2;
+}
+
+message PlayerBagItemDelta {
+  DeltaOp op = 1;
+  uint32 item_id = 2;
+  uint32 item_count = 3;
+}
+
+message PlayerBagDelta {
+  repeated PlayerBagMoneyDelta money_changes = 1;
+  repeated PlayerBagItemDelta item_changes = 2;
+}
+
+message PlayerDataDelta {
+  optional PlayerBaseDelta base = 1;
+  optional PlayerBagDelta bag = 2;
+}
