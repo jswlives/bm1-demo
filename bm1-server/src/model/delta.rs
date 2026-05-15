@@ -14,6 +14,7 @@ pub fn diff_player_data(before: &PlayerData, after: &PlayerData) -> Option<Playe
     Some(PlayerDataDelta { base, bag })
 }
 
+// Only diffs player_level; player_id and player_name are immutable at runtime.
 fn diff_base(before: &PlayerData, after: &PlayerData) -> Option<PlayerBaseDelta> {
     let before_level = before.player_base.as_ref().map(|b| b.player_level).unwrap_or(0);
     let after_level = after.player_base.as_ref().map(|b| b.player_level).unwrap_or(0);
