@@ -167,6 +167,12 @@ impl Connection {
     fn try_recv(&mut self) -> Option<CsRpcMsg> {
         self.read_rx.try_recv().ok()
     }
+
+    fn drain_notifies(&mut self) {
+        while let Some(msg) = self.try_recv() {
+            handle_notify(&msg);
+        }
+    }
 }
 
 async fn start_connection(addr: &str) -> Result<Connection> {
@@ -204,10 +210,7 @@ async fn main() -> Result<()> {
     let mut seq: u32 = 0;
 
     loop {
-        // Drain pending notifications (e.g., server-push PlayerDataNotify)
-        while let Some(msg) = conn.try_recv() {
-            handle_notify(&msg);
-        }
+        conn.drain_notifies();
 
         print_menu(session_id);
         let choice = read_line("选择操作: ");
@@ -254,10 +257,7 @@ async fn main() -> Result<()> {
                     }
                 }
 
-                // Consume any PlayerDataNotify that follows
-                while let Some(msg) = conn.try_recv() {
-                    handle_notify(&msg);
-                }
+                conn.drain_notifies();
             }
             "2" => {
                 if session_id == 0 {
@@ -286,10 +286,8 @@ async fn main() -> Result<()> {
                 conn.send(&req).await?;
                 println!(">>> 发送 AddMoneyReq: gold +{}", amount);
 
-                // First receive PlayerDataNotify (sent before Resp)
-                while let Some(msg) = conn.try_recv() {
-                    handle_notify(&msg);
-                }
+                // Receive PlayerDataNotify (sent before Resp)
+                conn.drain_notifies();
 
                 let resp = conn.recv().await?;
                 if let Some(Payload::AddMoneyResp(r)) = &resp.payload {
